@@ -18,9 +18,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
-from kinematics import InverseKinematics, JointCalibration
+from kinematics import InverseKinematics, JointCalibration, FrameTransform
 from trajectory import QuinticScurvePlanner
-import config as config
+import config
 
 
 @dataclass
@@ -44,8 +44,11 @@ class RoutineLoader:
       ]
     }
 
-    Cartesian coordinates are in meters, in the arm's base frame (x forward,
-    y sideways, z up from the table / base rotation axis level).
+    Cartesian coordinates are in meters, in COPPELIASIM'S WORLD FRAME --
+    i.e. whatever you read directly off an object's position in the scene.
+    RoutineExecutor applies FrameTransform (config.WORLD_BASE_POSITION /
+    WORLD_BASE_YAW) to convert into the robot-local frame before solving IK,
+    so you never need to do that conversion by hand when writing waypoints.
     """
 
     @staticmethod
@@ -76,11 +79,13 @@ class RoutineExecutor:
     def __init__(self, interface, ik: Optional[InverseKinematics] = None,
                  planner: Optional[QuinticScurvePlanner] = None,
                  calibration: Optional[JointCalibration] = None,
+                 frame_transform: Optional[FrameTransform] = None,
                  verbose: bool = True):
         self.interface = interface
         self.ik = ik or InverseKinematics()
         self.planner = planner or QuinticScurvePlanner()
         self.calibration = calibration or JointCalibration()
+        self.frame_transform = frame_transform or FrameTransform()
         self.verbose = verbose
 
     def _log(self, msg: str):
@@ -91,7 +96,8 @@ class RoutineExecutor:
         current_angles = self.interface.get_current_joint_angles()
 
         for wp in waypoints:
-            target_angles = self.ik.solve(wp.x, wp.y, wp.z, wp.gripper_open)
+            local_x, local_y, local_z = self.frame_transform.world_to_local(wp.x, wp.y, wp.z)
+            target_angles = self.ik.solve(local_x, local_y, local_z, wp.gripper_open)
             target_dict = dict(zip(config.JOINT_NAMES, target_angles.as_tuple()))
 
             est_duration = self.planner.estimate_duration(current_angles, target_dict)

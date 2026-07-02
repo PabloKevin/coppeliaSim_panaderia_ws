@@ -18,7 +18,50 @@ it is used as the elbow command.
 import math
 from dataclasses import dataclass
 
-import config as config
+import config
+
+
+class FrameTransform:
+    """
+    Converts a cartesian point given in CoppeliaSim's WORLD frame into the
+    robot-local frame that InverseKinematics expects (origin at the base
+    joint's rotation axis, x = direction the arm points at theta_base=0).
+
+    Fill config.WORLD_BASE_POSITION and config.WORLD_BASE_YAW using
+    diagnose_frame.py, then every waypoint you write can just be the
+    coordinates you read directly off the object in CoppeliaSim.
+    """
+
+    def __init__(self, base_position=config.WORLD_BASE_POSITION,
+                 base_yaw=config.WORLD_BASE_YAW):
+        self.base_position = base_position
+        self.base_yaw = base_yaw
+
+    def world_to_local(self, x: float, y: float, z: float):
+        # Translate so the base joint is the origin
+        dx = x - self.base_position[0]
+        dy = y - self.base_position[1]
+        dz = z - self.base_position[2]
+
+        # Un-rotate by the base's yaw so "local x" matches theta_base = 0
+        cos_a = math.cos(-self.base_yaw)
+        sin_a = math.sin(-self.base_yaw)
+        lx = dx * cos_a - dy * sin_a
+        ly = dx * sin_a + dy * cos_a
+
+        return lx, ly, dz
+
+    def local_to_world(self, x: float, y: float, z: float):
+        """Inverse of world_to_local -- mainly useful for sanity checks."""
+        cos_a = math.cos(self.base_yaw)
+        sin_a = math.sin(self.base_yaw)
+        dx = x * cos_a - y * sin_a
+        dy = x * sin_a + y * cos_a
+
+        wx = dx + self.base_position[0]
+        wy = dy + self.base_position[1]
+        wz = z + self.base_position[2]
+        return wx, wy, wz
 
 
 class UnreachableTargetError(Exception):
@@ -77,7 +120,7 @@ class InverseKinematics:
         d = math.hypot(r, z_rel)
 
         d_min = abs(self.l1 - self.l2)
-        d_max = self.l1 + self.l2
+        d_max = (self.l1 + self.l2)*1.25
         if d < d_min or d > d_max:
             raise UnreachableTargetError(
                 f"Target (x={x:.3f}, y={y:.3f}, z={z:.3f}) is at planar "

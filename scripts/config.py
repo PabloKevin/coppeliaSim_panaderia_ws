@@ -11,6 +11,13 @@ a link length, a limit, or a calibration value.
 """
 
 import math
+# ---------------------------------------------------------------------------
+# WORLD FRAME (meters, radians) -- to translate the origin of the arm's local 
+# frame to the world frame. This is used to convert between world coordinates 
+# and the arm's local coordinates.
+# ---------------------------------------------------------------------------
+WORLD_BASE_POSITION = (-0.04378, 0, 0)   # from base_pos (x, y, z)
+WORLD_BASE_YAW = 0 #-math.pi/2    # from base_ori's z component (radians) z_orientation
 
 # ---------------------------------------------------------------------------
 # ARM GEOMETRY (meters) -- measured on the physical robot
@@ -77,7 +84,7 @@ GRIPPER_OPEN = 0.8
 # increasing the internal angle moves the joint the wrong way.
 # ---------------------------------------------------------------------------
 CALIBRATION = {
-    "base":     {"sign": 1, "offset": 0.0},
+    "base":     {"sign": -1, "offset": 0.0},
     "shoulder": {"sign": 1, "offset": 0.0},
     "elbow":    {"sign": 1, "offset": 0.0},
     "gripper":  {"sign": 1, "offset": 0.0},
