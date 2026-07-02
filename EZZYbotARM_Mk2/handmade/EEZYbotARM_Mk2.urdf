@@ -1,0 +1,310 @@
+<?xml version="1.0"?>
+<robot name="EZZYbotARM_Mk2">
+    <link name="robot_base">
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_1.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.843137 0.352941 0.000000 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_2.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_3.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_4.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_5.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_6.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_7.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_8.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_9.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_10.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_11.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_12.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_13.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_14.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_15.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_16.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_17.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_18.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_19.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_20.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_21.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_22.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_23.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_24.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_25.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="EZZYbotARM_Mk2">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.055000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_robot_base_vis_26.dae" />
+            </geometry>
+            <material name="robot_base_material">
+                <color rgba="0.737255 0.937255 0.917647 1.0" />
+            </material>
+        </visual>
+        <visual name="012_base_visual">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 -0.000000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_012_base_visual_vis_1.dae" />
+            </geometry>
+            <material name="012_base_visual_material">
+                <color rgba="0.843137 0.352941 0.000000 1.0" />
+            </material>
+        </visual>
+        <visual name="013_lower_base_visual">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.034000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_013_lower_base_visual_vis_1.dae" />
+            </geometry>
+            <material name="013_lower_base_visual_material">
+                <color rgba="0.843137 0.352941 0.000000 1.0" />
+            </material>
+        </visual>
+        <visual name="606_visual">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.043777 -0.000000 0.037000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_606_visual_vis_1.dae" />
+            </geometry>
+            <material name="606_visual_material">
+                <color rgba="0.901961 0.901961 0.901961 1.0" />
+            </material>
+        </visual>
+        <visual name="mg946r_2_visual">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.109827 -0.000000 0.008500" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_mg946r_2_visual_vis_1.dae" />
+            </geometry>
+            <material name="mg946r_2_visual_material">
+                <color rgba="0.262745 0.282353 0.301961 1.0" />
+            </material>
+        </visual>
+        <visual name="mg946r_piattelo_visual">
+            <origin rpy="-3.141593 3.141593 -3.141593" xyz="-0.100077 -0.000000 0.045900" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_mg946r_piattelo_visual_vis_1.dae" />
+            </geometry>
+            <material name="mg946r_piattelo_visual_material">
+                <color rgba="0.043137 0.039216 0.039216 1.0" />
+            </material>
+        </visual>
+        <visual name="010_gearservo_visual">
+            <origin rpy="1.570802 3.141593 -1.570796" xyz="-0.100077 -0.000750 0.044450" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_010_gearservo_visual_vis_1.dae" />
+            </geometry>
+            <material name="010_gearservo_visual_material">
+                <color rgba="0.843137 0.352941 0.000000 1.0" />
+            </material>
+        </visual>
+    </link>
+    <joint name="motor1" type="continuous">
+        <axis xyz="0 0 1" />
+        <parent link="robot_base" />
+        <child link="011_gearmast_visual" />
+        <origin rpy="0.000005 3.141593 -1.570796" xyz="-0.043777 -0.000000 0.040000" />
+    </joint>
+    <link name="011_gearmast_visual">
+        <visual name="011_gearmast_visual">
+            <origin rpy="-1.570796 3.141593 -1.570800" xyz="-0.000000 0.000000 -0.004000" />
+            <geometry>
+                <mesh filename="file:///home/pablo_kevin/ros2_panaderia_ws/EZZYbotARM_Mk2/handmade/EEZYbotARM_Mk2_011_gearmast_visual_vis_1.dae" />
+            </geometry>
+            <material name="011_gearmast_visual_material">
+                <color rgba="0.843137 0.352941 0.000000 1.0" />
+            </material>
+        </visual>
+    </link>
+</robot>

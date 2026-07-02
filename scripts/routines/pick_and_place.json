@@ -1,0 +1,14 @@
+{
+  "waypoints": [
+    {"label": "home",             "x": 0.15, "y": 0.00,  "z": 0.15, "gripper_open": false, "wait_after_s": 0.2},
+    {"label": "above_cookie",     "x": 0.20, "y": 0.05,  "z": 0.10, "gripper_open": true,  "wait_after_s": 0.1},
+    {"label": "at_cookie",        "x": 0.20, "y": 0.05,  "z": 0.02, "gripper_open": true,  "wait_after_s": 0.2},
+    {"label": "grip_cookie",      "x": 0.20, "y": 0.05,  "z": 0.02, "gripper_open": false, "wait_after_s": 0.4},
+    {"label": "lift_cookie",      "x": 0.20, "y": 0.05,  "z": 0.12, "gripper_open": false, "wait_after_s": 0.1},
+    {"label": "above_place",      "x": 0.10, "y": -0.15, "z": 0.12, "gripper_open": false, "wait_after_s": 0.1},
+    {"label": "at_place",         "x": 0.10, "y": -0.15, "z": 0.02, "gripper_open": false, "wait_after_s": 0.2},
+    {"label": "release_cookie",   "x": 0.10, "y": -0.15, "z": 0.02, "gripper_open": true,  "wait_after_s": 0.3},
+    {"label": "retreat",          "x": 0.10, "y": -0.15, "z": 0.12, "gripper_open": true,  "wait_after_s": 0.1},
+    {"label": "home",             "x": 0.15, "y": 0.00,  "z": 0.15, "gripper_open": true,  "wait_after_s": 0.0}
+  ]
+}
