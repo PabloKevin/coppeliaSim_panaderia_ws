@@ -49,13 +49,13 @@ from sim_interface import CoppeliaSimController
 # your scene. More points, more spread out (especially in x/y and in
 # different quadrants), gives a better-conditioned fit.
 TEST_POINTS = [
-    (0.25, 0.00, 0.10),
-    (0.30, 0.15, 0.25),
-    (0.30, -0.25, 0.25),
-    (0.10, 0.15, 0.38),
-    (0.20, -0.15, 0.38),
-    (0.25, 0.00, 0.35),
-    (0.25, -0.10, 0.15),
+    (0.15, 0.00, 0.10),
+    (0.20, 0.05, 0.05),
+    (0.20, -0.05, 0.05),
+    (0.10, 0.15, 0.08),
+    (0.10, -0.15, 0.08),
+    (0.25, 0.00, 0.05),
+    (0.15, 0.10, 0.15),
     (0.15, -0.10, 0.15),
 ]
 
@@ -105,7 +105,8 @@ def main():
     joint_calibration = JointCalibration()
     frame = FrameTransform()  # uses whatever is CURRENTLY in config.py
 
-    current_angles = sim_ctrl.get_current_joint_angles()
+    raw_current = sim_ctrl.get_current_joint_angles()
+    current_angles = joint_calibration.commands_to_angles(raw_current)
 
     records = []  # each: dict(world_target, local_target, measured)
     for (wx, wy, wz) in TEST_POINTS:

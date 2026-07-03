@@ -16,12 +16,13 @@ import math
 # frame to the world frame. This is used to convert between world coordinates 
 # and the arm's local coordinates.
 # ---------------------------------------------------------------------------
-WORLD_BASE_POSITION = (-0.04378, 0, 0)   # from base_pos (x, y, z)
+#WORLD_BASE_POSITION = (-0.04378, 0, 0)   # from base_pos (x, y, z)
 #WORLD_BASE_YAW = 0  #-math.pi/2    # from base_ori's z component (radians) z_orientation
 
 #=== Fitted base transform (paste into config.py) ===
-#WORLD_BASE_POSITION = (-0.0992, 0.0662, -0.1140)
-WORLD_BASE_YAW = -0.1779   # -10.19 degrees
+WORLD_BASE_POSITION = (-0.0438, 0.0000, -0.0000)
+WORLD_BASE_YAW = 0.0021   # 0.12 degrees
+
 
 
 
@@ -67,7 +68,7 @@ D0 = 0.01300   # base -> shoulder, radial (was 0.00000)
 # matches the joint limits you measured in CoppeliaSim (motor3: -0.45..1.35
 # rad, i.e. mostly positive). Flip to "down" only if your solved angles keep
 # falling outside the physical limits after calibration.
-ELBOW_CONFIG = "up"   # "up" or "down"
+ELBOW_CONFIG = "down"   # "up" or "down"
 
 # ---------------------------------------------------------------------------
 # JOINT LIMITS (radians) -- taken directly from your CoppeliaSim scene
@@ -101,8 +102,8 @@ GRIPPER_OPEN = 0.8
 # ---------------------------------------------------------------------------
 CALIBRATION = {
     "base":     {"sign": -1, "offset": 0.0},
-    "shoulder": {"sign": 1, "offset": 0.0},
-    "elbow":    {"sign":-1, "offset": -0.0729},
+    "shoulder": {"sign": 1, "offset": -1.8819885},
+    "elbow":    {"sign":-1, "offset": -0.0729548},
     "gripper":  {"sign": 1, "offset": 0.0},
 }
 

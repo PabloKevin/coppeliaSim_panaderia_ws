@@ -215,6 +215,24 @@ class JointCalibration:
             )
         return value
 
+    def from_command(self, joint_name: str, raw_value: float) -> float:
+        """
+        Inverse of to_command(): converts a raw sim/servo value back into
+        our internal absolute-angle convention. Needed whenever we read the
+        arm's CURRENT pose (e.g. sim.getJointPosition) and want to use it as
+        a trajectory start point alongside IK-computed (internal-space)
+        targets -- mixing raw and internal angles directly is a bug, since
+        they're only the same when calibration is identity (sign=1, offset=0).
+        """
+        cal = self.calibration[joint_name]
+        return (raw_value - cal["offset"]) / cal["sign"]
+
+    def commands_to_angles(self, raw_commands: dict) -> dict:
+        return {
+            name: self.from_command(name, value)
+            for name, value in raw_commands.items()
+        }
+
     def angles_to_commands(self, angles: JointAngles) -> dict:
         return {
             name: self.to_command(name, value)

@@ -93,7 +93,8 @@ class RoutineExecutor:
             print(msg)
 
     def run(self, waypoints: List[Waypoint]):
-        current_angles = self.interface.get_current_joint_angles()
+        raw_current = self.interface.get_current_joint_angles()
+        current_angles = self.calibration.commands_to_angles(raw_current)
 
         for wp in waypoints:
             local_x, local_y, local_z = self.frame_transform.world_to_local(wp.x, wp.y, wp.z)

@@ -5,10 +5,10 @@
     {"label": "at_cookie",        "x": 0.250, "y": 0.160,  "z": 0.125, "gripper_open": true,  "wait_after_s": 0.2},
     {"label": "grip_cookie",      "x": 0.250, "y": 0.160,  "z": 0.125, "gripper_open": false, "wait_after_s": 0.4},
     {"label": "lift_cookie",      "x": 0.250, "y": 0.160,  "z": 0.150, "gripper_open": false, "wait_after_s": 0.1},
-    {"label": "above_place",      "x": -0.250, "y": -0.160, "z": 0.150, "gripper_open": false, "wait_after_s": 0.1},
-    {"label": "at_place",         "x": -0.250, "y": -0.160, "z": 0.125, "gripper_open": false, "wait_after_s": 0.2},
-    {"label": "release_cookie",   "x": -0.250, "y": -0.160, "z": 0.125, "gripper_open": true,  "wait_after_s": 0.3},
-    {"label": "retreat",          "x": -0.200, "y": -0.125, "z": 0.125, "gripper_open": true,  "wait_after_s": 0.1},
+    {"label": "above_place",      "x": 0.250, "y": -0.160, "z": 0.150, "gripper_open": false, "wait_after_s": 0.1},
+    {"label": "at_place",         "x": 0.250, "y": -0.160, "z": 0.125, "gripper_open": false, "wait_after_s": 0.2},
+    {"label": "release_cookie",   "x": 0.250, "y": -0.160, "z": 0.125, "gripper_open": true,  "wait_after_s": 0.3},
+    {"label": "retreat",          "x": 0.200, "y": -0.125, "z": 0.125, "gripper_open": true,  "wait_after_s": 0.1},
     {"label": "home",             "x": 0.10, "y": 0.00,  "z": 0.15, "gripper_open": true,  "wait_after_s": 0.0}
   ]
 }
