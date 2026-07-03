@@ -86,20 +86,38 @@ class InverseKinematics:
     the table / base-rotation-axis level) into the 4 absolute joint angles
     (radians) used internally by the rest of the pipeline.
 
+    MECHANISM (confirmed empirically via characterize_linkage.py): L1 is
+    driven directly by the shoulder servo (absolute angle theta1). L2's
+    absolute angle (theta2_abs) is set directly by the elbow servo via the
+    parallel-rod linkage, independent of the shoulder. L3 is a SEPARATE
+    parallelogram output link with a FIXED absolute angle in the world
+    frame (L3_FIXED_ANGLE) -- it does not rotate with L2 at all. So L3
+    contributes a constant offset vector to the end-effector position; the
+    2-link IK below is solved for L1/L2 placing the auxMotor2 point, and
+    the constant L3 offset is added/subtracted around that solve.
+
     NOTE: the angles returned here are in our own "absolute angle from
     horizontal" convention. They are NOT yet the values to command to the
     simulator or a real servo -- that mapping (sign/offset) lives in
     config.CALIBRATION and is applied by JointCalibration.to_command().
     """
 
-    def __init__(self, l1=config.L1, l2_eff=config.L2_EFF,
+    def __init__(self, l1=config.L1, l2=config.L2, l3=config.L3,
+                 l3_angle=config.L3_FIXED_ANGLE,
                  h0=config.H0, d0=config.D0,
                  elbow_config=config.ELBOW_CONFIG):
         self.l1 = l1
-        self.l2 = l2_eff
+        self.l2 = l2
+        self.l3 = l3
+        self.l3_angle = l3_angle
         self.h0 = h0
         self.d0 = d0
         self.elbow_config = elbow_config
+
+        # Constant offset contributed by L3, since its absolute angle never
+        # changes with arm pose.
+        self._l3_offset_r = self.l3 * math.cos(self.l3_angle)
+        self._l3_offset_z = self.l3 * math.sin(self.l3_angle)
 
     def solve(self, x: float, y: float, z: float, gripper_open: bool) -> JointAngles:
         """
@@ -109,7 +127,8 @@ class InverseKinematics:
                       False -> gripper target = config.GRIPPER_CLOSED
 
         Returns a JointAngles instance. Raises UnreachableTargetError if the
-        target is outside the reachable annulus of the 2-link arm.
+        target is outside the reachable annulus of the 2-link (L1, L2) arm,
+        once the fixed L3 offset has been accounted for.
         """
         theta_base = math.atan2(y, x)
 
@@ -117,14 +136,20 @@ class InverseKinematics:
         # rotation axis, minus the small horizontal shoulder offset).
         r = math.hypot(x, y) - self.d0
         z_rel = z - self.h0
-        d = math.hypot(r, z_rel)
+
+        # Subtract L3's constant contribution: we now need to place
+        # auxMotor2 (end of L2), not the gripper center directly.
+        r2 = r - self._l3_offset_r
+        z2 = z_rel - self._l3_offset_z
+        d = math.hypot(r2, z2)
 
         d_min = abs(self.l1 - self.l2)
-        d_max = (self.l1 + self.l2)*1.25
+        d_max = self.l1 + self.l2
         if d < d_min or d > d_max:
             raise UnreachableTargetError(
-                f"Target (x={x:.3f}, y={y:.3f}, z={z:.3f}) is at planar "
-                f"distance {d:.4f} m from the shoulder axis, outside the "
+                f"Target (x={x:.3f}, y={y:.3f}, z={z:.3f}) requires "
+                f"auxMotor2 at planar distance {d:.4f} m from the shoulder "
+                f"axis (after removing the fixed L3 offset), outside the "
                 f"reachable range [{d_min:.4f}, {d_max:.4f}] m."
             )
 
@@ -134,7 +159,7 @@ class InverseKinematics:
         theta2_rel_mag = math.acos(cos_theta2_rel)
         theta2_rel = theta2_rel_mag if self.elbow_config == "up" else -theta2_rel_mag
 
-        theta1 = math.atan2(z_rel, r) - math.atan2(
+        theta1 = math.atan2(z2, r2) - math.atan2(
             self.l2 * math.sin(theta2_rel),
             self.l1 + self.l2 * math.cos(theta2_rel),
         )
@@ -154,8 +179,10 @@ class InverseKinematics:
         theta1 = angles.shoulder
         theta2_abs = angles.elbow
 
-        r = self.l1 * math.cos(theta1) + self.l2 * math.cos(theta2_abs) + self.d0
-        z = self.l1 * math.sin(theta1) + self.l2 * math.sin(theta2_abs) + self.h0
+        r = (self.l1 * math.cos(theta1) + self.l2 * math.cos(theta2_abs)
+             + self._l3_offset_r + self.d0)
+        z = (self.l1 * math.sin(theta1) + self.l2 * math.sin(theta2_abs)
+             + self._l3_offset_z + self.h0)
 
         x = r * math.cos(angles.base)
         y = r * math.sin(angles.base)

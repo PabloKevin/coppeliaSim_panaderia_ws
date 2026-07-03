@@ -17,12 +17,20 @@ import math
 # and the arm's local coordinates.
 # ---------------------------------------------------------------------------
 WORLD_BASE_POSITION = (-0.04378, 0, 0)   # from base_pos (x, y, z)
-WORLD_BASE_YAW = 0 #-math.pi/2    # from base_ori's z component (radians) z_orientation
+#WORLD_BASE_YAW = 0  #-math.pi/2    # from base_ori's z component (radians) z_orientation
+
+#=== Fitted base transform (paste into config.py) ===
+#WORLD_BASE_POSITION = (-0.0992, 0.0662, -0.1140)
+WORLD_BASE_YAW = -0.1779   # -10.19 degrees
+
+
+
 
 # ---------------------------------------------------------------------------
 # ARM GEOMETRY (meters) -- measured on the physical robot
 # ---------------------------------------------------------------------------
 # L1: shoulder rotation axis -> elbow hinge axis (upper arm)
+
 L1 = 0.135
 
 # L2: elbow hinge axis -> gripper mounting aux joint (forearm, via parallel
@@ -34,14 +42,22 @@ L2 = 0.147
 #     in the same direction. If your gripper mount sits at a fixed angular
 #     offset from the forearm bracket instead, add that offset here and use
 #     it in kinematics.py when computing the effective forearm angle.
-L3 = 0.029
+L3 = 0.09447
+L3_FIXED_ANGLE = -0.0990   # radians, measured via characterize_linkage.py (-5.67 deg)
 
-# Effective forearm length used directly in the 2-link planar IK.
-L2_EFF = L2 + L3
+
 
 # Base rotation axis -> shoulder rotation axis
 H0 = 0.094   # vertical offset (m)
 D0 = 0.000   # horizontal offset (m), measured ~0
+"""
+#=== Measured geometry (paste into config.py) ===
+L1 = 0.13567   # shoulder -> elbow hinge (was 0.13500)
+L2 = 0.14728   # elbow hinge -> gripper mount aux joint (was 0.14700)
+L3 = 0.09490   # gripper mount aux joint -> gripper center (was 0.02900)
+H0 = -0.05400   # base -> shoulder, vertical (was 0.09400)
+D0 = 0.01300   # base -> shoulder, radial (was 0.00000)
+"""
 
 # ---------------------------------------------------------------------------
 # ELBOW CONFIGURATION
@@ -86,7 +102,7 @@ GRIPPER_OPEN = 0.8
 CALIBRATION = {
     "base":     {"sign": -1, "offset": 0.0},
     "shoulder": {"sign": 1, "offset": 0.0},
-    "elbow":    {"sign": 1, "offset": 0.0},
+    "elbow":    {"sign":-1, "offset": -0.0729},
     "gripper":  {"sign": 1, "offset": 0.0},
 }
 
@@ -127,3 +143,9 @@ SIM_JOINT_PATHS = {
     "elbow":    "/EZZYbotARM_Mk2/motor3",
     "gripper":  "/EZZYbotARM_Mk2/motor4",
 }
+
+# Dummy object placed at the gripper center (where the cookie sits),
+# parented to the end effector so it moves with the arm. Used only for
+# calibration (calibrate_frame.py) to measure where the gripper ACTUALLY
+# ends up vs. where a cartesian target intended it to go.
+EFFECTOR_DUMMY_PATH = "/EZZYbotARM_Mk2/EndEffector_Dummy" 

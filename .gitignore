@@ -1,2 +1,4 @@
 *.simscene.xml
 *.simmodel.xml
+*.ttt 
+*.ttm
