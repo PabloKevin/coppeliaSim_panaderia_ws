@@ -20,6 +20,7 @@ from typing import List, Optional
 
 from kinematics import InverseKinematics, JointCalibration, FrameTransform
 from trajectory import QuinticScurvePlanner
+from grasp import AdaptiveGripper
 import config
 
 
@@ -29,8 +30,13 @@ class Waypoint:
     x: float
     y: float
     z: float
-    gripper_open: bool
+    gripper_open: bool   # True -> open to config.GRIPPER_OPEN.
+                          # False -> hold gripper's current position UNLESS
+                          # adaptive_grasp is also True (see below).
     wait_after_s: float = 0.0
+    adaptive_grasp: bool = False   # if True (gripper_open must be False): actively
+                                     # close via force feedback (grasp.AdaptiveGripper)
+                                     # once the arm reaches this waypoint.
 
 
 class RoutineLoader:
@@ -61,6 +67,7 @@ class RoutineLoader:
                 x=wp["x"], y=wp["y"], z=wp["z"],
                 gripper_open=wp["gripper_open"],
                 wait_after_s=wp.get("wait_after_s", 0.0),
+                adaptive_grasp=wp.get("adaptive_grasp", False),
             ))
         return waypoints
 
@@ -80,12 +87,14 @@ class RoutineExecutor:
                  planner: Optional[QuinticScurvePlanner] = None,
                  calibration: Optional[JointCalibration] = None,
                  frame_transform: Optional[FrameTransform] = None,
+                 adaptive_gripper: Optional[AdaptiveGripper] = None,
                  verbose: bool = True):
         self.interface = interface
         self.ik = ik or InverseKinematics()
         self.planner = planner or QuinticScurvePlanner()
         self.calibration = calibration or JointCalibration()
         self.frame_transform = frame_transform or FrameTransform()
+        self.adaptive_gripper = adaptive_gripper or AdaptiveGripper(interface, self.calibration)
         self.verbose = verbose
 
     def _log(self, msg: str):
@@ -101,18 +110,33 @@ class RoutineExecutor:
             target_angles = self.ik.solve(local_x, local_y, local_z, wp.gripper_open)
             target_dict = dict(zip(config.JOINT_NAMES, target_angles.as_tuple()))
 
+            if not wp.gripper_open:
+                # gripper_open=False never means "slam to the hardcoded closed
+                # angle" -- that would re-crush an already-grasped object on
+                # every subsequent move. It means "leave the gripper as-is,"
+                # except during the active adaptive_grasp step itself, which
+                # closes it separately (with force feedback) below.
+                target_dict["gripper"] = current_angles["gripper"]
+
             est_duration = self.planner.estimate_duration(current_angles, target_dict)
             self._log(f"-> {wp.label or '(unlabeled)'}: "
                       f"({wp.x:.3f}, {wp.y:.3f}, {wp.z:.3f}) "
                       f"gripper={'open' if wp.gripper_open else 'closed'} "
+                      f"{'[adaptive grasp]' if wp.adaptive_grasp else ''} "
                       f"[~{est_duration:.2f}s]")
 
             samples = self.planner.plan(current_angles, target_dict)
             self.interface.stream_trajectory(samples, self.calibration)
 
+            current_angles = dict(target_dict)
+
+            if wp.adaptive_grasp:
+                final_gripper_angle = self.adaptive_gripper.close_until_contact(
+                    current_angles["gripper"]
+                )
+                current_angles["gripper"] = final_gripper_angle
+
             if wp.wait_after_s > 0:
                 time.sleep(wp.wait_after_s)
-
-            current_angles = target_dict
 
         self._log("Routine complete.")

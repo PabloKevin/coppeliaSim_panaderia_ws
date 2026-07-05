@@ -150,3 +150,30 @@ SIM_JOINT_PATHS = {
 # calibration (calibrate_frame.py) to measure where the gripper ACTUALLY
 # ends up vs. where a cartesian target intended it to go.
 EFFECTOR_DUMMY_PATH = "/EZZYbotARM_Mk2/EndEffector_Dummy" 
+
+
+# ---------------------------------------------------------------------------
+# FORCE-FEEDBACK GRASPING
+# ---------------------------------------------------------------------------
+# Path to a Force Sensor object inserted into the gripper's hierarchy
+# (jointObject -> forceSensor -> fingerShape), so it reads the contact
+# force transmitted to the finger. Update this to your scene's actual path.
+GRIPPER_FORCE_SENSOR_PATH = "/EZZYbotARM_Mk2/gripperProximitySensor"   
+ 
+# Force (Newtons) at which contact is considered detected and closing stops.
+# START LOW and tune from the printed force log during a real grasp test --
+# grasp.py prints the force at every step, so watch where it jumps from ~0
+# to something real once the jaw touches the cylinder, and set this a bit
+# above the "no contact" noise floor.
+GRIP_FORCE_THRESHOLD_N = 0.0006
+ 
+# How far (radians) the gripper steps per increment while closing. Smaller
+# = gentler / more precise contact detection, but slower and more sim steps.
+GRIP_STEP_RAD = 0.025
+ 
+# Pause (seconds) after each step before reading the force sensor, letting
+# the sim settle so the reading isn't just transient contact noise.
+GRIP_STEP_DELAY_S = 0.05
+
+# timeout_s elapses (safety fallback, shouldn't normally trigger)
+GRIPPER_CLOSE_TIMEOUT_S = 5.0
