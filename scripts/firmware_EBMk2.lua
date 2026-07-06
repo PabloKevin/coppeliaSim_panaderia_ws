@@ -43,15 +43,15 @@ function sysCall_init()
     -- Upper loop
     auxJoint               = sim.getObject('../auxJoint')
     motor3_auxJoint        = sim.getObject('../motor3/auxJoint')
-    link135_auxJoint       = sim.getObject('../004_link_135_visual/auxJoint')
-    link135angled_auxJoint = sim.getObject('../005_link_135angled_respondable/auxJoint')
+    link135_auxJoint       = sim.getObject('../004_link_135_visual_convexDecomposed/auxJoint')
+    link135angled_auxJoint = sim.getObject('../auxJoint/auxJoint')
 
     -- Lower loop
     auxMotor1              = sim.getObject('../auxMotor1')
     motor2_auxJoint        = sim.getObject('../motor2/auxJoint')
     auxMotor2              = sim.getObject('../auxMotor2')
-    horarm_auxJoint        = sim.getObject('../006_horarm_visual/auxJoint')
-
+    horarm_auxJoint        = sim.getObject('../006_horarm_visual_convexDecomposed/auxJoint')
+    
     sim.addLog(sim.verbosity_infos,
         '[EBA_MK2] Linkage + limits script initialised OK.')
 end

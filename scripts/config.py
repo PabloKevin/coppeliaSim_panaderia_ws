@@ -139,17 +139,17 @@ JOINT_NAMES = ("base", "shoulder", "elbow", "gripper")
 # COPPELIASIM SCENE OBJECT PATHS
 # ---------------------------------------------------------------------------
 SIM_JOINT_PATHS = {
-    "base":     "/EZZYbotARM_Mk2/motor1",
-    "shoulder": "/EZZYbotARM_Mk2/motor2",
-    "elbow":    "/EZZYbotARM_Mk2/motor3",
-    "gripper":  "/EZZYbotARM_Mk2/motor4",
+    "base":     "/motor1",
+    "shoulder": "/motor2",
+    "elbow":    "/motor3",
+    "gripper":  "/motor4",
 }
 
 # Dummy object placed at the gripper center (where the cookie sits),
 # parented to the end effector so it moves with the arm. Used only for
 # calibration (calibrate_frame.py) to measure where the gripper ACTUALLY
 # ends up vs. where a cartesian target intended it to go.
-EFFECTOR_DUMMY_PATH = "/EZZYbotARM_Mk2/EndEffector_Dummy" 
+EFFECTOR_DUMMY_PATH = "/EndEffector_Dummy" 
 
 
 # ---------------------------------------------------------------------------
@@ -158,14 +158,14 @@ EFFECTOR_DUMMY_PATH = "/EZZYbotARM_Mk2/EndEffector_Dummy"
 # Path to a Force Sensor object inserted into the gripper's hierarchy
 # (jointObject -> forceSensor -> fingerShape), so it reads the contact
 # force transmitted to the finger. Update this to your scene's actual path.
-GRIPPER_FORCE_SENSOR_PATH = "/EZZYbotARM_Mk2/gripperProximitySensor"   
+GRIPPER_FORCE_SENSOR_PATH = "/gripperProximitySensor"   
  
 # Force (Newtons) at which contact is considered detected and closing stops.
 # START LOW and tune from the printed force log during a real grasp test --
 # grasp.py prints the force at every step, so watch where it jumps from ~0
 # to something real once the jaw touches the cylinder, and set this a bit
 # above the "no contact" noise floor.
-GRIP_FORCE_THRESHOLD_N = 0.0006
+GRIP_FORCE_THRESHOLD_N = 0.0001
  
 # How far (radians) the gripper steps per increment while closing. Smaller
 # = gentler / more precise contact detection, but slower and more sim steps.
