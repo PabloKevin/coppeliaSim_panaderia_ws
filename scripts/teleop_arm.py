@@ -32,10 +32,10 @@ sim = client.require('sim')
 
 # Fetch joint handles matching your active setup
 joint_configs = [
-    {"name": "/base", "handle": sim.getObject('/EZZYbotARM_Mk2/motor1'), "step": 0.05, "pos": 0.0},
-    {"name": "/shoulder", "handle": sim.getObject('/EZZYbotARM_Mk2/motor2'), "step": 0.05, "pos": 0.0},
-    {"name": "/elbow", "handle": sim.getObject('/EZZYbotARM_Mk2/motor3'), "step": 0.05, "pos": 0.0},
-    {"name": "/gripper", "handle": sim.getObject('/EZZYbotARM_Mk2/motor4'), "step": 0.05, "pos": 0.0},
+    {"name": "/base", "handle": sim.getObject('/motor1'), "step": 0.05, "pos": 0.0},
+    {"name": "/shoulder", "handle": sim.getObject('/motor2'), "step": 0.05, "pos": 0.0},
+    {"name": "/elbow", "handle": sim.getObject('/motor3'), "step": 0.05, "pos": 0.0},
+    {"name": "/gripper", "handle": sim.getObject('/motor4'), "step": 0.05, "pos": 0.0},
 ]
 
 limits = {
