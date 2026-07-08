@@ -22,7 +22,7 @@ from routine import RoutineLoader, RoutineExecutor
 
 
 def main():
-    routine_path = sys.argv[1] if len(sys.argv) > 1 else "routines/pick_and_place.json"
+    routine_path = sys.argv[1] if len(sys.argv) > 1 else "routines/routine_00.json"
 
     print(f"Connecting to CoppeliaSim...")
     sim = CoppeliaSimController().connect()

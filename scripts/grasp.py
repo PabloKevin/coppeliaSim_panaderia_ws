@@ -61,9 +61,11 @@ class AdaptiveGripper:
         handle = self._get_sensor_handle()
         state, force_vec, _torque_vec = self.interface.sim.readForceSensor(handle)
         if not state:
-            return 0.0
-        #print(f"Force magnitude {math.sqrt(sum(f ** 2 for f in force_vec)):.3f} N")
-        return math.sqrt(sum(f ** 2 for f in force_vec))
+            return -1.0
+        force = force_vec[1]
+        #force = math.sqrt(sum(f ** 2 for f in force_vec))
+        print(f"Force magnitude {force:.7f} N")
+        return force
     
     def _read_distance_magnitude(self) -> float:
         handle = self._get_sensor_handle()
@@ -75,6 +77,7 @@ class AdaptiveGripper:
 
     def close_until_contact(self, current_gripper_internal_angle: float,
                              force_threshold_n=config.GRIP_FORCE_THRESHOLD_N,
+                             distance_threshold_m=config.GRIP_DISTANCE_THRESHOLD_m,
                              fully_closed_internal=None,
                              step_rad=config.GRIP_STEP_RAD,
                              step_dt=config.GRIP_STEP_DELAY_S,
@@ -121,7 +124,10 @@ class AdaptiveGripper:
             self.interface.set_joint_targets({"gripper": raw_command})
             time.sleep(step_dt)
 
-            if self._read_distance_magnitude() <= force_threshold_n and self._read_distance_magnitude() != -1.0:
+            """if self._read_distance_magnitude() <= distance_threshold_m and self._read_distance_magnitude() != -1.0:
+                contact_detected = True
+                break"""
+            if self._read_force_magnitude() >= force_threshold_n and self._read_force_magnitude() != -1.0:
                 contact_detected = True
                 break
 

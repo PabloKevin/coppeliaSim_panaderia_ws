@@ -158,22 +158,23 @@ EFFECTOR_DUMMY_PATH = "/EndEffector_Dummy"
 # Path to a Force Sensor object inserted into the gripper's hierarchy
 # (jointObject -> forceSensor -> fingerShape), so it reads the contact
 # force transmitted to the finger. Update this to your scene's actual path.
-GRIPPER_FORCE_SENSOR_PATH = "/gripperProximitySensor"   
+GRIPPER_FORCE_SENSOR_PATH = "/gripperForceSensor"   
  
 # Force (Newtons) at which contact is considered detected and closing stops.
 # START LOW and tune from the printed force log during a real grasp test --
 # grasp.py prints the force at every step, so watch where it jumps from ~0
 # to something real once the jaw touches the cylinder, and set this a bit
 # above the "no contact" noise floor.
-GRIP_FORCE_THRESHOLD_N = 0.0001
+GRIP_DISTANCE_THRESHOLD_m = 0.0001
+GRIP_FORCE_THRESHOLD_N = 0.2
  
 # How far (radians) the gripper steps per increment while closing. Smaller
 # = gentler / more precise contact detection, but slower and more sim steps.
-GRIP_STEP_RAD = 0.025
+GRIP_STEP_RAD = 0.020
  
 # Pause (seconds) after each step before reading the force sensor, letting
 # the sim settle so the reading isn't just transient contact noise.
 GRIP_STEP_DELAY_S = 0.05
 
 # timeout_s elapses (safety fallback, shouldn't normally trigger)
-GRIPPER_CLOSE_TIMEOUT_S = 5.0
+GRIPPER_CLOSE_TIMEOUT_S = 8.0

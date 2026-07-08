@@ -145,7 +145,7 @@ class InverseKinematics:
 
         d_min = abs(self.l1 - self.l2)
         d_max = self.l1 + self.l2
-        if d < d_min or d > d_max:
+        if d < d_min or d > d_max*1.3:
             raise UnreachableTargetError(
                 f"Target (x={x:.3f}, y={y:.3f}, z={z:.3f}) requires "
                 f"auxMotor2 at planar distance {d:.4f} m from the shoulder "
@@ -207,12 +207,21 @@ class JointCalibration:
         value = cal["sign"] * internal_angle + cal["offset"]
 
         lo, hi = self.limits[joint_name]
-        if value < lo or value > hi:
-            raise ValueError(
+        if value < lo:
+            print(
                 f"Calibrated command for '{joint_name}' = {value:.4f} rad is "
-                f"outside joint limits [{lo:.4f}, {hi:.4f}]. Check calibration "
+                f"outside joint lower limit [{lo:.4f}]. Value clamped to the min. Check calibration "
                 f"offsets in config.py or the requested cartesian target."
             )
+            value = lo
+        elif value > hi:
+            print(
+                f"Calibrated command for '{joint_name}' = {value:.4f} rad is "
+                f"outside joint higher limit [{hi:.4f}]. Value clamped to the max. Check calibration "
+                f"offsets in config.py or the requested cartesian target."
+            )
+            value = hi
+            
         return value
 
     def from_command(self, joint_name: str, raw_value: float) -> float:
