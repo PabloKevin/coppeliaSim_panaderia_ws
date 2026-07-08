@@ -170,11 +170,11 @@ GRIP_FORCE_THRESHOLD_N = 0.4
  
 # How far (radians) the gripper steps per increment while closing. Smaller
 # = gentler / more precise contact detection, but slower and more sim steps.
-GRIP_STEP_RAD = 0.020
+GRIP_STEP_RAD = 0.050
  
 # Pause (seconds) after each step before reading the force sensor, letting
 # the sim settle so the reading isn't just transient contact noise.
-GRIP_STEP_DELAY_S = 0.05
+GRIP_STEP_DELAY_S = 0.03
 
 # timeout_s elapses (safety fallback, shouldn't normally trigger)
 GRIPPER_CLOSE_TIMEOUT_S = 8.0
