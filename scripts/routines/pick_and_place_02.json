@@ -1,0 +1,232 @@
+{
+  "waypoints": [
+    {
+      "label": "home",
+      "x": 0.15,
+      "y": 0.0,
+      "z": 0.15,
+      "gripper_open": false,
+      "wait_after_s": 0.2
+    },
+    {
+      "label": "at_cookie",
+      "x": 0.25,
+      "y": 0.1,
+      "z": 0.11,
+      "gripper_open": true,
+      "wait_after_s": 0.2
+    },
+    {
+      "label": "grip_cookie",
+      "x": 0.25,
+      "y": 0.1,
+      "z": 0.11,
+      "gripper_open": false,
+      "wait_after_s": 0.4,
+      "adaptive_grasp": true
+    },
+    {
+      "label": "lift_cookie",
+      "x": 0.25,
+      "y": 0.1,
+      "z": 0.15,
+      "gripper_open": false,
+      "wait_after_s": 0.1
+    },
+    {
+      "label": "at_place",
+      "x": 0.25,
+      "y": -0.1,
+      "z": 0.11,
+      "gripper_open": false,
+      "wait_after_s": 0.2
+    },
+    {
+      "label": "release_cookie",
+      "x": 0.25,
+      "y": -0.1,
+      "z": 0.11,
+      "gripper_open": true,
+      "wait_after_s": 0.3
+    },
+    {
+      "label": "home",
+      "x": 0.15,
+      "y": 0.0,
+      "z": 0.15,
+      "gripper_open": true,
+      "wait_after_s": 0.0
+    },
+    {
+      "label": "home",
+      "x": 0.15,
+      "y": 0.0,
+      "z": 0.15,
+      "gripper_open": false,
+      "wait_after_s": 0.2
+    },
+    {
+      "label": "at_cookie",
+      "x": 0.25,
+      "y": -0.1,
+      "z": 0.11,
+      "gripper_open": true,
+      "wait_after_s": 0.2
+    },
+    {
+      "label": "grip_cookie",
+      "x": 0.25,
+      "y": -0.1,
+      "z": 0.11,
+      "gripper_open": false,
+      "wait_after_s": 0.4,
+      "adaptive_grasp": true
+    },
+    {
+      "label": "lift_cookie",
+      "x": 0.25,
+      "y": -0.1,
+      "z": 0.15,
+      "gripper_open": false,
+      "wait_after_s": 0.1
+    },
+    {
+      "label": "at_place",
+      "x": 0.25,
+      "y": 0.1,
+      "z": 0.11,
+      "gripper_open": false,
+      "wait_after_s": 0.2
+    },
+    {
+      "label": "release_cookie",
+      "x": 0.25,
+      "y": 0.1,
+      "z": 0.11,
+      "gripper_open": true,
+      "wait_after_s": 0.3
+    },
+    {
+      "label": "home",
+      "x": 0.15,
+      "y": 0.0,
+      "z": 0.15,
+      "gripper_open": true,
+      "wait_after_s": 0.0
+    },
+    {
+      "label": "home",
+      "x": 0.15,
+      "y": 0.0,
+      "z": 0.15,
+      "gripper_open": false,
+      "wait_after_s": 0.2
+    },
+    {
+      "label": "at_cookie",
+      "x": 0.25,
+      "y": 0.1,
+      "z": 0.11,
+      "gripper_open": true,
+      "wait_after_s": 0.2
+    },
+    {
+      "label": "grip_cookie",
+      "x": 0.25,
+      "y": 0.1,
+      "z": 0.11,
+      "gripper_open": false,
+      "wait_after_s": 0.4,
+      "adaptive_grasp": true
+    },
+    {
+      "label": "lift_cookie",
+      "x": 0.25,
+      "y": 0.1,
+      "z": 0.15,
+      "gripper_open": false,
+      "wait_after_s": 0.1
+    },
+    {
+      "label": "at_place",
+      "x": 0.25,
+      "y": -0.1,
+      "z": 0.11,
+      "gripper_open": false,
+      "wait_after_s": 0.2
+    },
+    {
+      "label": "release_cookie",
+      "x": 0.25,
+      "y": -0.1,
+      "z": 0.11,
+      "gripper_open": true,
+      "wait_after_s": 0.3
+    },
+    {
+      "label": "home",
+      "x": 0.15,
+      "y": 0.0,
+      "z": 0.15,
+      "gripper_open": true,
+      "wait_after_s": 0.0
+    },
+    {
+      "label": "home",
+      "x": 0.15,
+      "y": 0.0,
+      "z": 0.15,
+      "gripper_open": false,
+      "wait_after_s": 0.2
+    },
+    {
+      "label": "at_cookie",
+      "x": 0.25,
+      "y": -0.1,
+      "z": 0.11,
+      "gripper_open": true,
+      "wait_after_s": 0.2
+    },
+    {
+      "label": "grip_cookie",
+      "x": 0.25,
+      "y": -0.1,
+      "z": 0.11,
+      "gripper_open": false,
+      "wait_after_s": 0.4,
+      "adaptive_grasp": true
+    },
+    {
+      "label": "lift_cookie",
+      "x": 0.25,
+      "y": -0.1,
+      "z": 0.15,
+      "gripper_open": false,
+      "wait_after_s": 0.1
+    },
+    {
+      "label": "at_place",
+      "x": 0.25,
+      "y": 0.1,
+      "z": 0.11,
+      "gripper_open": false,
+      "wait_after_s": 0.2
+    },
+    {
+      "label": "release_cookie",
+      "x": 0.25,
+      "y": 0.1,
+      "z": 0.11,
+      "gripper_open": true,
+      "wait_after_s": 0.3
+    },
+    {
+      "label": "home",
+      "x": 0.15,
+      "y": 0.0,
+      "z": 0.15,
+      "gripper_open": true,
+      "wait_after_s": 0.0
+    }
+  ]
+}

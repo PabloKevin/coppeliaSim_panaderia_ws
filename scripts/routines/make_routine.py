@@ -72,17 +72,17 @@ if __name__ == "__main__":
         safe_z   = 0.15,
         
         object_x = 0.25,
-        object_y = 0.16,
-        object_z = 0.1125,
+        object_y = 0.10,
+        object_z = 0.11,
         
         target_x = 0.25,
-        target_y = -0.16,
-        target_z = 0.1125,
+        target_y = -0.10,
+        target_z = 0.11,
 
         loop_reps = 2
     )
 
-    push_object = gen.push_object_waypoints(
+    """push_object = gen.push_object_waypoints(
         object_x = 0.25,
         object_y = 0.100,
         object_z = 0.125,
@@ -90,11 +90,11 @@ if __name__ == "__main__":
         target_x = 0.33,
         target_y = 0.03,
         target_z = 0.125
-    )
+    )"""
 
-    full_routine = gen.unite_waypoints([push_object, pick_and_place])
+    #full_routine = gen.unite_waypoints([push_object, pick_and_place])
 
-    gen.save_waypoints_to_json(full_routine, "routine_00.json")
+    gen.save_waypoints_to_json(pick_and_place, "pick_and_place_02.json")
 
 
 

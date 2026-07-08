@@ -166,7 +166,7 @@ GRIPPER_FORCE_SENSOR_PATH = "/gripperForceSensor"
 # to something real once the jaw touches the cylinder, and set this a bit
 # above the "no contact" noise floor.
 GRIP_DISTANCE_THRESHOLD_m = 0.0001
-GRIP_FORCE_THRESHOLD_N = 0.2
+GRIP_FORCE_THRESHOLD_N = 0.4
  
 # How far (radians) the gripper steps per increment while closing. Smaller
 # = gentler / more precise contact detection, but slower and more sim steps.
