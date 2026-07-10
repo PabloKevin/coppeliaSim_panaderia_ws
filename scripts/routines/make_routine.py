@@ -29,13 +29,19 @@ class WaypointGenerator:
 
         return waypoints
 
-    def push_object_waypoints(self, object_x, object_y, object_z, target_x, target_y, target_z, gripper_open=True):
+    def push_object_waypoints(self, object_x, object_y, object_z, target_x, target_y, target_z, gripper_open=True, homeback=False):
         waypoints = {
             "waypoints": [
                 {"label": "at_object",        "x": float(object_x), "y": float(object_y), "z": float(object_z), "gripper_open": gripper_open,  "wait_after_s": 0.2},
                 {"label": "push_object",      "x": float(target_x), "y": float(target_y), "z": float(target_z), "gripper_open": gripper_open, "wait_after_s": 0.0}
             ]
         }
+
+        if homeback:
+            wp = waypoints
+            wp_inverse = self.push_object_waypoints(target_x, target_y, target_z, object_x, object_y, object_z, gripper_open=gripper_open, homeback=False)
+            waypoints = self.unite_waypoints([wp, wp_inverse])
+
         return waypoints
     
     def unite_waypoints(self, waypoints_dicts):
@@ -64,7 +70,7 @@ if __name__ == "__main__":
     gen = WaypointGenerator()
     # Change your location coordinates right here.
     # The generated file will only contain the resulting float calculations.
-    pick_and_place = gen.pick_and_place_waypoints(
+    """pick_and_place = gen.pick_and_place_waypoints(
         home_x   = 0.15,
         home_y   = 0.0,
         home_z   = 0.15,
@@ -81,20 +87,23 @@ if __name__ == "__main__":
 
         loop_reps = 2
     )
-
-    """push_object = gen.push_object_waypoints(
-        object_x = 0.25,
-        object_y = 0.100,
-        object_z = 0.125,
+    """
+    push_object = gen.push_object_waypoints(
+        object_x = 0.140,
+        object_y = 0.00,
+        object_z = 0.14,
         
-        target_x = 0.33,
-        target_y = 0.03,
-        target_z = 0.125
-    )"""
+        target_x = 0.280,
+        target_y = 0.0,
+        target_z = 0.145,
+        gripper_open = True,
+        homeback = True
+    )
 
     #full_routine = gen.unite_waypoints([push_object, pick_and_place])
 
-    gen.save_waypoints_to_json(pick_and_place, "pick_and_place_02.json")
+    #gen.save_waypoints_to_json(pick_and_place, "pick_and_place_02.json")
+    gen.save_waypoints_to_json(push_object, "push_01.json")
 
 
 

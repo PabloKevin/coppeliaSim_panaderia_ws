@@ -126,6 +126,9 @@ MAX_ACCEL = {    # rad/s^2
     "gripper": 4.0,
 }
 
+MAX_LINEAR_VEL = 5  # m/s, for cartesian moves (x,y,z)
+MAX_LINEAR_ACCEL = 5  # m/s^2, for cartesian moves (x,y,z)
+
 # Minimum move duration (s), avoids degenerate zero-length trajectories
 MIN_MOVE_DURATION = 0.15
 

@@ -98,3 +98,84 @@ class QuinticScurvePlanner:
             default=0.0,
         )
         return max(duration, self.min_duration)
+
+
+class LinearCartesianPlanner:
+    """
+    Plans a jerk-limited move along a STRAIGHT LINE in cartesian space
+    (x, y, z), instead of a straight line in joint-space. QuinticScurvePlanner
+    interpolates joint angles directly, which produces a curved/paraboloid
+    end-effector path even though each joint's own motion is smooth -- this
+    class fixes that by interpolating position and solving IK fresh at every
+    sample, so the gripper actually traces a line between start and goal.
+
+    Uses the same quintic (minimum-jerk) time-scaling as QuinticScurvePlanner,
+    but sized from a LINEAR distance (meters) and linear velocity/acceleration
+    limits (config.MAX_LINEAR_VEL / MAX_LINEAR_ACCEL), not per-joint ones.
+    The gripper channel is interpolated separately over the same time base,
+    since it isn't part of the cartesian IK.
+    """
+
+    def __init__(self, ik, max_linear_vel=None, max_linear_accel=None,
+                 update_rate_hz=config.UPDATE_RATE_HZ,
+                 min_duration=config.MIN_MOVE_DURATION):
+        self.ik = ik
+        self.max_linear_vel = max_linear_vel if max_linear_vel is not None else config.MAX_LINEAR_VEL
+        self.max_linear_accel = max_linear_accel if max_linear_accel is not None else config.MAX_LINEAR_ACCEL
+        self.dt = 1.0 / update_rate_hz
+        self.min_duration = min_duration
+
+    def _required_duration(self, distance: float) -> float:
+        if distance == 0.0:
+            return 0.0
+        t_v = _PEAK_VEL_COEFF * distance / self.max_linear_vel
+        t_a = math.sqrt(_PEAK_ACCEL_COEFF * distance / self.max_linear_accel)
+        return max(t_v, t_a)
+
+    def plan(self, start_xyz, goal_xyz, start_gripper: float, goal_gripper: float) -> List[TrajectorySample]:
+        """
+        start_xyz, goal_xyz: (x, y, z) tuples in the SAME frame the IK
+        instance expects (i.e. the arm's LOCAL frame -- convert from world
+        coordinates via FrameTransform.world_to_local before calling this).
+        start_gripper, goal_gripper: gripper angle (radians) to interpolate
+        between over the same time base -- pass start_gripper==goal_gripper
+        to hold it constant during the move.
+
+        Returns a time-ordered list of TrajectorySample, sampled at
+        config.UPDATE_RATE_HZ, always ending exactly on the goal. Raises
+        kinematics.UnreachableTargetError if any point along the line
+        (not just the endpoints) falls outside the reachable workspace.
+        """
+        dx = goal_xyz[0] - start_xyz[0]
+        dy = goal_xyz[1] - start_xyz[1]
+        dz = goal_xyz[2] - start_xyz[2]
+        distance = math.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
+
+        duration = max(self._required_duration(distance), self.min_duration)
+        n_steps = max(1, math.ceil(duration / self.dt))
+
+        d_gripper = goal_gripper - start_gripper
+        samples = []
+        for i in range(n_steps + 1):
+            t = min(i * self.dt, duration)
+            tau = t / duration
+            s = _quintic_s(tau)
+
+            x = start_xyz[0] + dx * s
+            y = start_xyz[1] + dy * s
+            z = start_xyz[2] + dz * s
+
+            angles = self.ik.solve(x, y, z, gripper_open=True)  # gripper field overwritten below
+            joint_angles = dict(zip(config.JOINT_NAMES, angles.as_tuple()))
+            joint_angles["gripper"] = start_gripper + d_gripper * s
+
+            samples.append(TrajectorySample(t=t, joint_angles=joint_angles))
+
+        return samples
+
+    def estimate_duration(self, start_xyz, goal_xyz) -> float:
+        dx = goal_xyz[0] - start_xyz[0]
+        dy = goal_xyz[1] - start_xyz[1]
+        dz = goal_xyz[2] - start_xyz[2]
+        distance = math.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
+        return max(self._required_duration(distance), self.min_duration)
