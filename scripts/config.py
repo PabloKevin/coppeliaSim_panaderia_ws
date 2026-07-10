@@ -113,24 +113,24 @@ CALIBRATION = {
 # just stops jerking; going higher than necessary just makes it snappier.
 # ---------------------------------------------------------------------------
 MAX_VEL = {      # rad/s
-    "base": 1.0,
-    "shoulder": 0.8,
-    "elbow": 0.8,
-    "gripper": 2.0,
+    "base": 20.0,
+    "shoulder": 20.0,
+    "elbow": 20.0,
+    "gripper": 10.0,
 }
 
 MAX_ACCEL = {    # rad/s^2
-    "base": 1.5,
-    "shoulder": 1.2,
-    "elbow": 1.2,
-    "gripper": 4.0,
+    "base": 30.0,
+    "shoulder": 30.0,
+    "elbow": 30.0,
+    "gripper": 10.0,
 }
 
-MAX_LINEAR_VEL = 5  # m/s, for cartesian moves (x,y,z)
-MAX_LINEAR_ACCEL = 5  # m/s^2, for cartesian moves (x,y,z)
+MAX_LINEAR_VEL = 20  # m/s, for cartesian moves (x,y,z)
+MAX_LINEAR_ACCEL = 20  # m/s^2, for cartesian moves (x,y,z)
 
 # Minimum move duration (s), avoids degenerate zero-length trajectories
-MIN_MOVE_DURATION = 0.15
+MIN_MOVE_DURATION = 0.02
 
 # Trajectory sampling / streaming rate to CoppeliaSim (and later, serial)
 UPDATE_RATE_HZ = 50.0

@@ -100,20 +100,15 @@ class QuinticScurvePlanner:
         return max(duration, self.min_duration)
 
 
+
 class LinearCartesianPlanner:
     """
     Plans a jerk-limited move along a STRAIGHT LINE in cartesian space
-    (x, y, z), instead of a straight line in joint-space. QuinticScurvePlanner
-    interpolates joint angles directly, which produces a curved/paraboloid
-    end-effector path even though each joint's own motion is smooth -- this
-    class fixes that by interpolating position and solving IK fresh at every
-    sample, so the gripper actually traces a line between start and goal.
-
-    Uses the same quintic (minimum-jerk) time-scaling as QuinticScurvePlanner,
-    but sized from a LINEAR distance (meters) and linear velocity/acceleration
-    limits (config.MAX_LINEAR_VEL / MAX_LINEAR_ACCEL), not per-joint ones.
-    The gripper channel is interpolated separately over the same time base,
-    since it isn't part of the cartesian IK.
+    (x, y, z), instead of a straight line in joint-space. 
+    
+    Dynamically scales the trajectory duration up if any individual joint's 
+    velocity or acceleration limits (defined as dictionaries in config.py) 
+    are exceeded during the linear translation.
     """
 
     def __init__(self, ik, max_linear_vel=None, max_linear_accel=None,
@@ -133,28 +128,75 @@ class LinearCartesianPlanner:
         return max(t_v, t_a)
 
     def plan(self, start_xyz, goal_xyz, start_gripper: float, goal_gripper: float) -> List[TrajectorySample]:
-        """
-        start_xyz, goal_xyz: (x, y, z) tuples in the SAME frame the IK
-        instance expects (i.e. the arm's LOCAL frame -- convert from world
-        coordinates via FrameTransform.world_to_local before calling this).
-        start_gripper, goal_gripper: gripper angle (radians) to interpolate
-        between over the same time base -- pass start_gripper==goal_gripper
-        to hold it constant during the move.
-
-        Returns a time-ordered list of TrajectorySample, sampled at
-        config.UPDATE_RATE_HZ, always ending exactly on the goal. Raises
-        kinematics.UnreachableTargetError if any point along the line
-        (not just the endpoints) falls outside the reachable workspace.
-        """
         dx = goal_xyz[0] - start_xyz[0]
         dy = goal_xyz[1] - start_xyz[1]
         dz = goal_xyz[2] - start_xyz[2]
         distance = math.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
 
+        # 1. Start with the baseline duration forced by linear spatial speeds
         duration = max(self._required_duration(distance), self.min_duration)
+
+        # 2. Virtual lookahead step to check joint limits using config dictionaries
+        N_CHECK = 20  # Sample points along the path to verify joint differential behavior
+        dt_check = duration / N_CHECK
+
+        max_v_observed = {name: 0.0 for name in config.JOINT_NAMES}
+        max_a_observed = {name: 0.0 for name in config.JOINT_NAMES}
+
+        prev_angles = None
+        prev_vel = None
+        d_gripper = goal_gripper - start_gripper
+
+        for i in range(N_CHECK + 1):
+            tau = i / N_CHECK
+            s = _quintic_s(tau)
+
+            x = start_xyz[0] + dx * s
+            y = start_xyz[1] + dy * s
+            z = start_xyz[2] + dz * s
+
+            # Solve Inverse Kinematics identical to the final execution structure
+            angles = self.ik.solve(x, y, z, gripper_open=True)
+            joint_angles = dict(zip(config.JOINT_NAMES, angles.as_tuple()))
+            joint_angles["gripper"] = start_gripper + d_gripper * s
+
+            if prev_angles is not None:
+                # Calculate required joint velocities at this trial duration
+                vel = {}
+                for name in config.JOINT_NAMES:
+                    v = (joint_angles[name] - prev_angles[name]) / dt_check
+                    vel[name] = v
+                    max_v_observed[name] = max(max_v_observed[name], abs(v))
+
+                if prev_vel is not None:
+                    # Calculate required joint accelerations at this trial duration
+                    for name in config.JOINT_NAMES:
+                        a = (vel[name] - prev_vel[name]) / dt_check
+                        max_a_observed[name] = max(max_a_observed[name], abs(a))
+                prev_vel = vel
+            prev_angles = joint_angles
+
+        # 3. Compute scaling factor using the limit dictionaries from config.py
+        scale_factor = 1.0
+        for name in config.JOINT_NAMES:
+            v_max = config.MAX_VEL[name]
+            a_max = config.MAX_ACCEL[name]
+
+            # Check velocity constraints (proportional to 1/t)
+            if max_v_observed[name] > v_max:
+                v_ratio = max_v_observed[name] / v_max
+                scale_factor = max(scale_factor, v_ratio)
+
+            # Check acceleration constraints (proportional to 1/t^2, so take square root)
+            if max_a_observed[name] > a_max:
+                a_ratio = math.sqrt(max_a_observed[name] / a_max)
+                scale_factor = max(scale_factor, a_ratio)
+
+        # Protect joints by stretching the duration if an architectural bottleneck is found
+        duration *= scale_factor
         n_steps = max(1, math.ceil(duration / self.dt))
 
-        d_gripper = goal_gripper - start_gripper
+        # 4. Generate the final smooth S-curve samples using the safe duration
         samples = []
         for i in range(n_steps + 1):
             t = min(i * self.dt, duration)
@@ -165,7 +207,7 @@ class LinearCartesianPlanner:
             y = start_xyz[1] + dy * s
             z = start_xyz[2] + dz * s
 
-            angles = self.ik.solve(x, y, z, gripper_open=True)  # gripper field overwritten below
+            angles = self.ik.solve(x, y, z, gripper_open=True)
             joint_angles = dict(zip(config.JOINT_NAMES, angles.as_tuple()))
             joint_angles["gripper"] = start_gripper + d_gripper * s
 
