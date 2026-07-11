@@ -26,12 +26,16 @@ from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 client = RemoteAPIClient()
 sim = client.require('sim')
 
-vision_sensor   = sim.getObject('/visionSensor')
-conveyor_joint  = sim.getObject('/ConveyorMotor')      # revolute joint driving the ring
-conveyor_center = sim.getObject('/ConveyorCenter')     # dummy at the ring's rotation axis
-strike_dummy    = sim.getObject('/MiddleOrigin')        # dummy at the fixed angle the arm pushes from
-ik_target       = sim.getObject('/MiddleTarget')        # IK target dummy for the arm tip
-calib_markers   = [sim.getObject(f'/CalibMarker{i}') for i in range(4)]
+vision_sensor    = sim.getObject('/visionSensor')
+conveyor_handle  = sim.getObject('/conveyorSystem')     # TUNE: exact name/path of your conveyor model
+conveyor_center  = sim.getObject('/conveyorSystem/ConveyorCenter')     # dummy at the ring's rotation axis
+strike_dummy     = sim.getObject('/MiddleOrigin')        # dummy at the fixed angle the arm pushes from
+ik_target        = sim.getObject('/MiddleTarget')        # IK target dummy for the arm tip
+calib_markers    = [sim.getObject('/CalibMarker1'), sim.getObject('/CalibMarker2'), sim.getObject('/CalibMarker3'), sim.getObject('/CalibMarker4')]  # TUNE: order of markers in IMG_PTS
+
+# Measured once geometrically (see calibration notes at bottom of file).
+R_PATH = 0.500          # meters, radius of the belt's centerline
+LOOP_LENGTH = 2 * math.pi * R_PATH
 
 BRIDGE_TARGETS = {
     'cylinder': '/Bridge1',
@@ -73,9 +77,15 @@ strike_pos = sim.getObjectPosition(strike_dummy, -1)
 theta_eff = math.atan2(strike_pos[1] - center_pos[1], strike_pos[0] - center_pos[0])
 
 
-def get_omega():
-    """Angular velocity of the ring (rad/s). Positive = same sense as theta convention."""
-    return sim.getJointVelocity(conveyor_joint)
+def get_conveyor_vel():
+    """Current linear belt speed (m/s), read live from the conveyor model's state."""
+    state = sim.readCustomTableData(conveyor_handle, '__state__')
+    return state['vel']
+
+
+def set_conveyor_vel(v):
+    """Command the belt's linear speed (m/s) via velocity control."""
+    sim.setBufferProperty(conveyor_handle, 'customData.__ctrl__', sim.packTable({'vel': v}))
 
 
 # ---------------------------------------------------------------------------
@@ -155,13 +165,17 @@ def detect_new_objects():
 
 
 def register_new_object(oid, shape, r, theta_obj):
-    omega = get_omega()
-    if abs(omega) < 1e-6:
+    v = get_conveyor_vel()
+    if abs(v) < 1e-6:
         return
-    dtheta = (theta_eff - theta_obj) % (2 * math.pi)   # assumes rotation direction matches sign(omega)
-    t_arrival = sim.getSimulationTime() + dtheta / abs(omega)
+    # NOTE: direction of increasing theta must match the belt's direction of travel.
+    # If the arm gets triggered too early/late by roughly a full loop, flip the sign
+    # of dtheta below (use (theta_obj - theta_eff) % (2*pi) instead).
+    dtheta = (theta_eff - theta_obj) % (2 * math.pi)
+    ds = dtheta * R_PATH
+    t_arrival = sim.getSimulationTime() + ds / abs(v)
     scheduled.append({'id': oid, 'shape': shape, 'r': r, 't': t_arrival})
-    print(f"[detect] id={oid} shape={shape} r={r:.3f}m -> strike at t={t_arrival:.2f}s")
+    print(f"[detect] id={oid} shape={shape} r={r:.3f}m ds={ds:.3f}m -> strike at t={t_arrival:.2f}s")
 
 
 # ---------------------------------------------------------------------------
@@ -195,6 +209,18 @@ def move_arm_to_push(x, y, z, shape):
     # TODO: step/wait until the arm reports it reached the target,
     # then move toward BRIDGE_TARGETS[shape] and return to ready pose.
 
+
+# ---------------------------------------------------------------------------
+# Throughput optimization (optional)
+# ---------------------------------------------------------------------------
+# Ceiling: two cookies closer together (in arc length) than the arm's full
+# cycle time will cause a miss. If you know/measure the minimum spacing
+# s_min between consecutive cookies on the belt, cap speed accordingly:
+#
+#   T_CYCLE = 1.2          # TUNE: measured full pick+push+retract time (s)
+#   S_MIN   = 0.15         # TUNE: closest expected spacing between cookies (m)
+#   v_max = S_MIN / T_CYCLE
+#   set_conveyor_vel(min(v_max * 0.9, YOUR_DESIRED_SPEED))  # 10% safety margin
 
 # ---------------------------------------------------------------------------
 # Main loop
