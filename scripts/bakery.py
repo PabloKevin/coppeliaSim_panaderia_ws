@@ -89,23 +89,35 @@ def set_conveyor_vel(v):
 
 
 # ---------------------------------------------------------------------------
-# Detection & shape classification
+# Detection & tracking
 # ---------------------------------------------------------------------------
-next_id = 0
-scheduled = []    # list of dicts: {id, shape, r, t}
+ENTRY_BAND_FRAC = 0.2       # TUNE: fraction of image width counted as "entry"
+CLASSIFY_DELAY = 0.4        # TUNE (seconds, sim time): wait this long after track starts before classifying
+SHOW_DEBUG_WINDOWS = False   # set False once tuned, to remove imshow overhead
  
-ENTRY_BAND_FRAC = 0.2     # TUNE: fraction of image width counted as "entry" side
-BIN_THRESH = 150          # TUNE: grayscale threshold to separate cookie from belt
+# TUNE: paste these in from hsv_tune_helper.py
+BROWN_LOW  = np.array([3, 43, 105])
+BROWN_HIGH = np.array([54, 131, 255])
+
  
-# Optical-flow track state. Only ONE active track at a time is supported here,
-# matching a single-lane entry point. A new detection is only allowed to start
-# once the previous track has been lost (point exited frame / flow broke down).
 LK_PARAMS = dict(winSize=(21, 21), maxLevel=3,
                   criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
  
-prev_gray = None
-track_pt = None       # np.array([[u, v]], dtype=float32) or None if no active track
-track_shape = None
+next_id = 0
+scheduled = []       # list of dicts: {id, shape, r, t}
+ 
+prev_mask = None
+track_pt = None       # np.array([[u, v]]) or None
+track_id = None
+track_start_time = None
+track_classified = False
+ 
+ 
+def get_cookie_mask(img_bgr):
+    """Binary mask (255 = cookie-colored pixel) via HSV color range."""
+    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, BROWN_LOW, BROWN_HIGH)
+    return mask
  
  
 def classify_shape(cnt):
@@ -118,20 +130,18 @@ def classify_shape(cnt):
     hull = cv2.convexHull(cnt)
     hull_area = cv2.contourArea(hull)
     solidity = area / hull_area if hull_area > 0 else 1.0
+    #print(f"[classify] area={area:.1f} peri={peri:.1f} circ={circularity:.3f} approx={len(approx)} sol={solidity:.3f}")
  
-    if circularity < 0.5 and len(approx)==4:                       # TUNE
+    if circularity > 0.65:                       # TUNE
         return 'cylinder'
     if len(approx) == 4 and solidity > 0.9:      # TUNE
         return 'cuboid'
-    if solidity < 0.75:                          # TUNE
+    if solidity < 0.8:                          # TUNE
         return 'star'
     return None
  
  
-def find_entry_candidate(gray, band_px):
-    """Contour-based search, restricted to the entry band, used only to seed a
-    new optical-flow track when there isn't one active yet."""
-    _, mask = cv2.threshold(gray, BIN_THRESH, 255, cv2.THRESH_BINARY)
+def find_entry_candidate(mask, band_px):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for cnt in contours:
         M = cv2.moments(cnt)
@@ -140,79 +150,91 @@ def find_entry_candidate(gray, band_px):
         u, v = M['m10'] / M['m00'], M['m01'] / M['m00']
         if u >= band_px:
             continue
-        shape = classify_shape(cnt)
-        if shape is None:
+        if cv2.contourArea(cnt) < 5:
             continue
-        return u, v, shape
+        return u, v
     return None
  
  
-def detect_new_objects():
-    global next_id, prev_gray, track_pt, track_shape
+def find_contour_near(mask, u, v, max_dist):
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    best, best_d = None, max_dist
+    for cnt in contours:
+        M = cv2.moments(cnt)
+        if M['m00'] == 0:
+            continue
+        cu, cv_ = M['m10'] / M['m00'], M['m01'] / M['m00']
+        d = math.hypot(cu - u, cv_ - v)
+        if d < best_d:
+            best, best_d = cnt, d
+    return best
  
-    img, res = sim.getVisionSensorImg(vision_sensor)   
+ 
+def detect_new_objects():
+    global next_id, prev_mask, track_pt, track_id, track_start_time, track_classified
+ 
+    img, res = sim.getVisionSensorImg(vision_sensor)   # NOTE: (image, resolution) order
     img = np.frombuffer(img, dtype=np.uint8).reshape(res[1], res[0], 3)
-    img = cv2.flip(img, 0)  # CoppeliaSim images are bottom-up
-    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    band_px = res[0] * ENTRY_BAND_FRAC   # TUNE: depends on camera orientation
+    img = cv2.flip(img, 0)
+    img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    mask = get_cookie_mask(img_bgr)
+    band_px = res[0] * ENTRY_BAND_FRAC
+ 
+    if SHOW_DEBUG_WINDOWS:
+        disp = cv2.resize(img_bgr, (384, 384), interpolation=cv2.INTER_NEAREST)
+        disp_mask = cv2.resize(mask, (384, 384), interpolation=cv2.INTER_NEAREST)
+        cv2.imshow('VisionSensor', disp)
+        cv2.imshow('CookieMask', disp_mask)
+        cv2.waitKey(1)   # REQUIRED for windows to actually refresh on Linux
  
     if track_pt is None:
-        # No active track: look for a new object entering the band.
-        candidate = find_entry_candidate(gray, band_px)
+        candidate = find_entry_candidate(mask, band_px)
         if candidate is not None:
-            time.sleep(0.2)
-            candidate = find_entry_candidate(gray, band_px)
-            u, v, shape = candidate
-            oid = next_id
-            next_id += 1
-            x, y = pixel_to_world(u, v)
-            r = math.hypot(x - center_pos[0], y - center_pos[1])
-            theta_obj = math.atan2(y - center_pos[1], x - center_pos[0])
-            register_new_object(oid, shape, r, theta_obj)
- 
-            # Seed the optical-flow track so we don't re-detect this same
-            # object again until it's left the frame.
+            u, v = candidate
             track_pt = np.array([[u, v]], dtype=np.float32).reshape(-1, 1, 2)
-            track_shape = shape
-        prev_gray = gray
+            track_id = next_id
+            next_id += 1
+            track_start_time = sim.getSimulationTime()
+            track_classified = False
+        prev_mask = mask
         return
  
-    # An active track exists: propagate it with optical flow instead of
-    # re-running contour detection (robust to segmentation flicker).
-    new_pts, status, _ = cv2.calcOpticalFlowPyrLK(prev_gray, gray, track_pt, None, **LK_PARAMS)
-    prev_gray = gray
+    # Track with optical flow on the grayscale mask itself (high-contrast,
+    # good features for LK since it's pure black/white).
+    new_pts, status, _ = cv2.calcOpticalFlowPyrLK(prev_mask, mask, track_pt, None, **LK_PARAMS)
+    prev_mask = mask
  
     if new_pts is None or status is None or status[0][0] == 0:
-        # Flow lost -- assume the object left the frame or tracking broke down.
         track_pt = None
-        track_shape = None
         return
  
     u, v = new_pts[0, 0]
     if u < 0 or u >= res[0] or v < 0 or v >= res[1]:
-        # Point has left the visible frame -- clear track, ready for the next object.
         track_pt = None
-        track_shape = None
         return
- 
     track_pt = new_pts
+ 
+    if not track_classified and sim.getSimulationTime() - track_start_time >= CLASSIFY_DELAY:
+        cnt = find_contour_near(mask, u, v, 25)
+        if cnt is not None:
+            shape = classify_shape(cnt)
+            if shape is not None:
+                track_classified = True
+                x, y = pixel_to_world(u, v)
+                r = math.hypot(x - center_pos[0], y - center_pos[1])
+                theta_obj = math.atan2(y - center_pos[1], x - center_pos[0])
+                register_new_object(track_id, shape, r, theta_obj)
  
  
 def register_new_object(oid, shape, r, theta_obj):
     v = get_conveyor_vel()
     if abs(v) < 1e-6:
         return
-    # NOTE: direction of increasing theta must match the belt's direction of travel.
-    # If the arm gets triggered too early/late by roughly a full loop, flip the sign
-    # of dtheta below (use (theta_obj - theta_eff) % (2*pi) instead).
     dtheta = (theta_eff - theta_obj) % (2 * math.pi)
     ds = dtheta * R_PATH
     t_arrival = sim.getSimulationTime() + ds / abs(v)
     scheduled.append({'id': oid, 'shape': shape, 'r': r, 't': t_arrival})
-    wait = ds / abs(v)
-    print(f"[detect] id={oid} shape={shape} r={r:.3f}m ds={ds:.3f}m "
-          f"-> strike in {wait:.2f}s (t={t_arrival:.2f}s)")
-    
+    print(f"[detect] id={oid} shape={shape} r={r:.3f}m -> strike in {ds/abs(v):.2f}s")
 
 # ---------------------------------------------------------------------------
 # Arm execution
