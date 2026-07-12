@@ -119,7 +119,7 @@ def classify_shape(cnt):
     hull_area = cv2.contourArea(hull)
     solidity = area / hull_area if hull_area > 0 else 1.0
  
-    if circularity > 0.8:                       # TUNE
+    if circularity < 0.5 and len(approx)==4:                       # TUNE
         return 'cylinder'
     if len(approx) == 4 and solidity > 0.9:      # TUNE
         return 'cuboid'
@@ -160,6 +160,8 @@ def detect_new_objects():
         # No active track: look for a new object entering the band.
         candidate = find_entry_candidate(gray, band_px)
         if candidate is not None:
+            time.sleep(0.2)
+            candidate = find_entry_candidate(gray, band_px)
             u, v, shape = candidate
             oid = next_id
             next_id += 1
@@ -210,6 +212,7 @@ def register_new_object(oid, shape, r, theta_obj):
     wait = ds / abs(v)
     print(f"[detect] id={oid} shape={shape} r={r:.3f}m ds={ds:.3f}m "
           f"-> strike in {wait:.2f}s (t={t_arrival:.2f}s)")
+    
 
 # ---------------------------------------------------------------------------
 # Arm execution
