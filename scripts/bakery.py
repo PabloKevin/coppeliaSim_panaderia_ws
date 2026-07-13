@@ -219,24 +219,70 @@ def detect_new_objects():
                 register_new_object(track_id, shape, r, theta_obj)
  
  
+
+V_NORMAL = 0.2        # Velocidad de crucero/búsqueda (m/s)
+V_PUSHING = 0.13       # Velocidad lenta de empuje (m/s)
+CONVEYOR_ACCEL = 0.04  # TUNE: Aceleración máxima de tu cinta en m/s^2 
+
+def estimate_travel_time(ds, v_init, v_target, accel=None):
+    """
+    Calcula el tiempo de viaje considerando una rampa de aceleración/desaceleración lineal.
+    """
+    if accel is None or accel <= 0:
+        # Asumiendo cambio de velocidad instantáneo en el simulador
+        return ds / v_target
+
+    if abs(v_target - v_init) < 1e-5:
+        return ds / v_target
+
+    # Aceleración con signo (+ para acelerar, - para frenar)
+    a_signed = accel if v_target > v_init else -accel
+
+    # Tiempo y distancia requeridos para completar la rampa de velocidad
+    t_ramp = abs(v_target - v_init) / accel
+    d_ramp = (v_target**2 - v_init**2) / (2 * a_signed)
+
+    if ds >= d_ramp:
+        # Caso 1: Completa la rampa y sigue a velocidad constante
+        t_const = (ds - d_ramp) / v_target
+        return t_ramp + t_const
+    else:
+        # Caso 2: Alcanza el strike point durante la rampa de velocidad
+        discriminant = (v_init**2) + (2 * a_signed * ds)
+        if discriminant < 0:
+            # Salvaguarda física (frenado extremo que detiene la cinta antes de llegar)
+            return ds / max(v_target, 0.01)
+        
+        t = (-v_init + math.sqrt(discriminant)) / a_signed
+        return t
+
+
 def register_new_object(oid, shape, r, theta_obj):
+    # 1. Activamos el evento inmediatamente para iniciar la desaceleración
     pushing_event.set()
-    time.sleep(0.01)
-    v = sim.get_conveyor_vel()
-    if abs(v) < 1e-6:
-        return
+    
+    # 2. En lugar de leer el sensor con lag, usamos nuestro modelo de estados:
+    # Transicionamos de V_NORMAL (0.2) a V_PUSHING (0.1)
+    v_init = V_NORMAL
+    v_target = V_PUSHING
+    
+    # 3. Cálculo de distancia sobre la trayectoria del arco
     dtheta = (sim.theta_eff[SHAPE_IDX[shape]] - theta_obj) % (2 * math.pi)
     ds = dtheta * R_PATH
-    t_arrival = sim.time() + ds / abs(v)
+    
+    # 4. Cálculo del tiempo de arribo con el modelo cinemático
+    travel_time = estimate_travel_time(ds, v_init, v_target, CONVEYOR_ACCEL)
+    t_arrival = sim.time() + travel_time
+    
     scheduled.append({'id': oid, 'shape': shape, 'r': r, 't': t_arrival})
-    print(f"[detect] id={oid} shape={shape} r={r:.3f}m -> strike in {ds/abs(v):.2f}s")
+    print(f"[detect] id={oid} shape={shape} r={r:.3f}m -> strike in {travel_time:.2f}s (perfil con aceleración)")
 
 # ---------------------------------------------------------------------------
 # Arm execution
 # ---------------------------------------------------------------------------
 # Measure these empirically: time for the push trajectory from "ready" pose
 # to the strike point and back. Can also depend on r (longer reach = longer time).
-ARM_TRAVEL_TIME = {'cylinder': 0.4, 'cuboid': 0.2, 'star': 0.01}  # TUNE
+ARM_TRAVEL_TIME = {'cylinder': 0.8, 'cuboid': 0.75, 'star': 0.8}  # TUNE
 
 executor = RoutineExecutor(interface=sim)
 pushing_event = threading.Event()
@@ -258,7 +304,7 @@ def arm_control_step():
 def ready_pose(shape):
     waypoints = {
             "waypoints": [
-                {"label": "ready_pose", "x": sim.origin_pos[SHAPE_IDX[shape]][0], "y": sim.origin_pos[SHAPE_IDX[shape]][1], "z": sim.origin_pos[SHAPE_IDX[shape]][2], "gripper_open": False, "wait_after_s": 0.0}
+                {"label": "ready_pose", "x": sim.origin_pos[SHAPE_IDX[shape]][0], "y": sim.origin_pos[SHAPE_IDX[shape]][1], "z": sim.origin_pos[SHAPE_IDX[shape]][2], "gripper_open": True, "wait_after_s": 0.0}
             ]
         }
     waypoints = RoutineLoader.from_dict(waypoints)
@@ -268,8 +314,8 @@ def push_object(shape):
     #waypoints = RoutineLoader.load(routine_path[shape])
     waypoints = {
             "waypoints": [
-                {"label": "push_object", "x": sim.target_pos[SHAPE_IDX[shape]][0], "y": sim.target_pos[SHAPE_IDX[shape]][1], "z": sim.target_pos[SHAPE_IDX[shape]][2], "gripper_open": False, "wait_after_s": 0.0},
-                {"label": "home", "x": sim.origin_pos[SHAPE_IDX[shape]][0], "y": sim.origin_pos[SHAPE_IDX[shape]][1], "z": sim.origin_pos[SHAPE_IDX[shape]][2], "gripper_open": False, "wait_after_s": 0.0}
+                {"label": "push_object", "x": sim.target_pos[SHAPE_IDX[shape]][0], "y": sim.target_pos[SHAPE_IDX[shape]][1], "z": sim.target_pos[SHAPE_IDX[shape]][2], "gripper_open": True, "wait_after_s": 0.0},
+                {"label": "home", "x": sim.origin_pos[SHAPE_IDX[shape]][0], "y": sim.origin_pos[SHAPE_IDX[shape]][1], "z": sim.origin_pos[SHAPE_IDX[shape]][2], "gripper_open": True, "wait_after_s": 0.0}
             ]
         }
     waypoints = RoutineLoader.from_dict(waypoints)
@@ -299,15 +345,15 @@ if __name__ == "__main__":
 
     # Instanciación de los hilos
     cookiesGen = ObjectGenerator()
-    hilo_cookiesGen = threading.Thread(target=cookiesGen.tarea_spawn_galletas)
+    hilo_cookiesGen = threading.Thread(target=cookiesGen.tarea_spawn_galletas, daemon=True)
 
     cleanupGen = ObjectGenerator()
-    hilo_cleanup = threading.Thread(target=cleanupGen.tarea_cleanup_galletas, kwargs={"z_threshold": 0.075})
+    hilo_cleanup = threading.Thread(target=cleanupGen.tarea_cleanup_galletas, kwargs={"z_threshold": 0.075}, daemon=True)
     
-    hilo_main = threading.Thread(target=main_task)
+    hilo_main = threading.Thread(target=main_task, daemon=True)
     
-    conveynorCtr = ConveynorController(pushing_event, v_slow=0.13, v_fast=0.2)
-    hilo_conveynorVel = threading.Thread(target=conveynorCtr.optimizacion_vel)
+    conveynorCtr = ConveynorController(pushing_event, v_slow=V_PUSHING, v_fast=V_NORMAL)
+    hilo_conveynorVel = threading.Thread(target=conveynorCtr.optimizacion_vel, daemon=True)
     
 
     # Correr las tareas en hilos

@@ -2,3 +2,5 @@
 *.simmodel.xml
 *.ttt 
 *.ttm
+!*panaderia_ebmk_final.ttt
+!*EEZYbotArm_Mk2_dynamic.ttm
