@@ -11,6 +11,7 @@ boundary clean, per your "digital twin" goal.
 Requires: pip install coppeliasim-zmqremoteapi-client
 """
 
+import math
 import time
 
 import config as config
@@ -33,6 +34,17 @@ class CoppeliaSimController:
             name: self.sim.getObject(path)
             for name, path in self.joint_paths.items()
         }
+        self.vision_sensor    = self.sim.getObject('/visionSensor')
+        self.conveyor_handle  = self.sim.getObject('/conveyorSystem')     # TUNE: exact name/path of your conveyor model
+        self.conveyor_center  = self.sim.getObject('/conveyorSystem/ConveyorCenter')     # dummy at the ring's rotation axis
+        self.origin_dummy     = self.sim.getObject('/MiddleOrigin')        # dummy at the fixed angle the arm pushes from
+        self.strike_dummy     = self.sim.getObject('/MiddleStrike')        # dummy at the strike point on the belt's centerline
+        self.target_dummy     = self.sim.getObject('/MiddleTarget')        # IK target dummy for the arm tip
+        self.calib_markers    = [self.sim.getObject('/CalibMarker1'), self.sim.getObject('/CalibMarker2'), self.sim.getObject('/CalibMarker3'), self.sim.getObject('/CalibMarker4')]  # TUNE: order of markers in IMG_PTS
+        #geometry
+        self.center_pos = self.sim.getObjectPosition(self.conveyor_center, -1)
+        self.strike_pos = self.sim.getObjectPosition(self.strike_dummy, -1)
+        self.theta_eff = math.atan2(self.strike_pos[1] - self.center_pos[1], self.strike_pos[0] - self.center_pos[0])
         return self
 
     def get_current_joint_angles(self) -> dict:
@@ -79,3 +91,17 @@ class CoppeliaSimController:
         default -- real-time mode with wall-clock pacing (above) is simpler
         and matches how the real serial link will behave."""
         self.client.step()
+
+    def get_conveyor_vel(self):
+        """Current linear belt speed (m/s), read live from the conveyor model's state."""
+        state = self.sim.readCustomTableData(self.conveyor_handle, '__state__')
+        return state['vel']
+
+
+    def set_conveyor_vel(self, v):
+        """Command the belt's linear speed (m/s) via velocity control."""
+        self.sim.setBufferProperty(self.conveyor_handle, 'customData.__ctrl__', self.sim.packTable({'vel': v}))
+
+    def time(self):
+        """Current sim time (seconds) -- useful for scheduling future events."""
+        return self.sim.getSimulationTime()

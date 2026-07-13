@@ -18,20 +18,20 @@ import time
 import math
 import numpy as np
 import cv2
-from coppeliasim_zmqremoteapi_client import RemoteAPIClient
+import sys
+from sim_interface import CoppeliaSimController
+from routine import RoutineLoader, RoutineExecutor
 
 # ---------------------------------------------------------------------------
 # Connection & handles
 # ---------------------------------------------------------------------------
-client = RemoteAPIClient()
-sim = client.require('sim')
+#client = RemoteAPIClient()
+#sim = client.require('sim')
+print(f"Connecting to CoppeliaSim...")
+sim = CoppeliaSimController().connect()
+print("Connected.")
 
-vision_sensor    = sim.getObject('/visionSensor')
-conveyor_handle  = sim.getObject('/conveyorSystem')     # TUNE: exact name/path of your conveyor model
-conveyor_center  = sim.getObject('/conveyorSystem/ConveyorCenter')     # dummy at the ring's rotation axis
-strike_dummy     = sim.getObject('/MiddleOrigin')        # dummy at the fixed angle the arm pushes from
-ik_target        = sim.getObject('/MiddleTarget')        # IK target dummy for the arm tip
-calib_markers    = [sim.getObject('/CalibMarker1'), sim.getObject('/CalibMarker2'), sim.getObject('/CalibMarker3'), sim.getObject('/CalibMarker4')]  # TUNE: order of markers in IMG_PTS
+
 
 # Measured once geometrically (see calibration notes at bottom of file).
 R_PATH = 0.500          # meters, radius of the belt's centerline
@@ -42,6 +42,11 @@ BRIDGE_TARGETS = {
     'cuboid':   '/Bridge2',
     'star':     '/Bridge3',
 }
+
+routine_path = {
+    'cuboid': "routines/push_middleBridge.json"
+}
+
 
 # ---------------------------------------------------------------------------
 # One-time calibration: pixel -> world homography
@@ -57,7 +62,7 @@ IMG_PTS = np.array([
 ], dtype=np.float32)
 
 world_pts = np.array(
-    [sim.getObjectPosition(m, -1)[:2] for m in calib_markers],
+    [sim.sim.getObjectPosition(m, -1)[:2] for m in sim.calib_markers],
     dtype=np.float32
 )
 H, _ = cv2.findHomography(IMG_PTS, world_pts)
@@ -67,25 +72,6 @@ def pixel_to_world(u, v):
     p = H @ np.array([u, v, 1.0])
     p /= p[2]
     return float(p[0]), float(p[1])
-
-
-# ---------------------------------------------------------------------------
-# Geometry
-# ---------------------------------------------------------------------------
-center_pos = sim.getObjectPosition(conveyor_center, -1)
-strike_pos = sim.getObjectPosition(strike_dummy, -1)
-theta_eff = math.atan2(strike_pos[1] - center_pos[1], strike_pos[0] - center_pos[0])
-
-
-def get_conveyor_vel():
-    """Current linear belt speed (m/s), read live from the conveyor model's state."""
-    state = sim.readCustomTableData(conveyor_handle, '__state__')
-    return state['vel']
-
-
-def set_conveyor_vel(v):
-    """Command the belt's linear speed (m/s) via velocity control."""
-    sim.setBufferProperty(conveyor_handle, 'customData.__ctrl__', sim.packTable({'vel': v}))
 
 
 # ---------------------------------------------------------------------------
@@ -173,7 +159,7 @@ def find_contour_near(mask, u, v, max_dist):
 def detect_new_objects():
     global next_id, prev_mask, track_pt, track_id, track_start_time, track_classified
  
-    img, res = sim.getVisionSensorImg(vision_sensor)   # NOTE: (image, resolution) order
+    img, res = sim.sim.getVisionSensorImg(sim.vision_sensor)   # NOTE: (image, resolution) order
     img = np.frombuffer(img, dtype=np.uint8).reshape(res[1], res[0], 3)
     img = cv2.flip(img, 0)
     img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
@@ -194,7 +180,7 @@ def detect_new_objects():
             track_pt = np.array([[u, v]], dtype=np.float32).reshape(-1, 1, 2)
             track_id = next_id
             next_id += 1
-            track_start_time = sim.getSimulationTime()
+            track_start_time = sim.time()
             track_classified = False
         prev_mask = mask
         return
@@ -214,25 +200,25 @@ def detect_new_objects():
         return
     track_pt = new_pts
  
-    if not track_classified and sim.getSimulationTime() - track_start_time >= CLASSIFY_DELAY:
+    if not track_classified and sim.time() - track_start_time >= CLASSIFY_DELAY:
         cnt = find_contour_near(mask, u, v, 25)
         if cnt is not None:
             shape = classify_shape(cnt)
             if shape is not None:
                 track_classified = True
                 x, y = pixel_to_world(u, v)
-                r = math.hypot(x - center_pos[0], y - center_pos[1])
-                theta_obj = math.atan2(y - center_pos[1], x - center_pos[0])
+                r = math.hypot(x - sim.center_pos[0], y - sim.center_pos[1])
+                theta_obj = math.atan2(y - sim.center_pos[1], x - sim.center_pos[0])
                 register_new_object(track_id, shape, r, theta_obj)
  
  
 def register_new_object(oid, shape, r, theta_obj):
-    v = get_conveyor_vel()
+    v = sim.get_conveyor_vel()
     if abs(v) < 1e-6:
         return
-    dtheta = (theta_eff - theta_obj) % (2 * math.pi)
+    dtheta = (sim.theta_eff - theta_obj) % (2 * math.pi)
     ds = dtheta * R_PATH
-    t_arrival = sim.getSimulationTime() + ds / abs(v)
+    t_arrival = sim.time() + ds / abs(v)
     scheduled.append({'id': oid, 'shape': shape, 'r': r, 't': t_arrival})
     print(f"[detect] id={oid} shape={shape} r={r:.3f}m -> strike in {ds/abs(v):.2f}s")
 
@@ -243,29 +229,23 @@ def register_new_object(oid, shape, r, theta_obj):
 # to the strike point and back. Can also depend on r (longer reach = longer time).
 ARM_TRAVEL_TIME = {'cylinder': 0.6, 'cuboid': 0.6, 'star': 0.7}  # TUNE
 
+executor = RoutineExecutor(interface=sim)
 
 def arm_control_step():
-    now = sim.getSimulationTime()
+    now = sim.time()
     for job in list(scheduled):
+        
         lead = ARM_TRAVEL_TIME.get(job['shape'], 0.6)
         if now >= job['t'] - lead:
-            push_object(job['shape'], job['r'])
+            push_object(job['shape'])
             scheduled.remove(job)
 
 
-def push_object(shape, r):
-    x = center_pos[0] + r * math.cos(theta_eff)
-    y = center_pos[1] + r * math.sin(theta_eff)
-    z = strike_pos[2]
-    move_arm_to_push(x, y, z, shape)
+def push_object(shape):
+    if shape is 'cuboid':
+        waypoints = RoutineLoader.load(routine_path[shape])
+        executor.run(waypoints)
 
-
-def move_arm_to_push(x, y, z, shape):
-    # Replace with your actual push motion: e.g. move to a pre-push pose,
-    # sweep through (x, y, z) toward the bridge for `shape`, then retract.
-    sim.setObjectPosition(ik_target, -1, [x, y, z])
-    # TODO: step/wait until the arm reports it reached the target,
-    # then move toward BRIDGE_TARGETS[shape] and return to ready pose.
 
 
 # ---------------------------------------------------------------------------
@@ -283,7 +263,7 @@ def move_arm_to_push(x, y, z, shape):
 # ---------------------------------------------------------------------------
 # Main loop
 # ---------------------------------------------------------------------------
-sim.startSimulation()
+sim.sim.startSimulation()
 time.sleep(0.5)
 try:
     while True:

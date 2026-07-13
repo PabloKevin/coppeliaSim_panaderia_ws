@@ -1,4 +1,5 @@
 import json
+from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 
 class WaypointGenerator:
     def __init__(self):
@@ -32,7 +33,7 @@ class WaypointGenerator:
     def push_object_waypoints(self, object_x, object_y, object_z, target_x, target_y, target_z, gripper_open=True, homeback=False):
         waypoints = {
             "waypoints": [
-                {"label": "at_object",        "x": float(object_x), "y": float(object_y), "z": float(object_z), "gripper_open": gripper_open,  "wait_after_s": 0.2},
+                {"label": "at_object",        "x": float(object_x), "y": float(object_y), "z": float(object_z), "gripper_open": gripper_open,  "wait_after_s": 0.0},
                 {"label": "push_object",      "x": float(target_x), "y": float(target_y), "z": float(target_z), "gripper_open": gripper_open, "wait_after_s": 0.0}
             ]
         }
@@ -88,14 +89,24 @@ if __name__ == "__main__":
         loop_reps = 2
     )
     """
+    
+
+    client = RemoteAPIClient()
+    sim = client.require('sim')
+
+    origin_dummy     = sim.getObject('/MiddleOrigin')        
+    target_dummy     = sim.getObject('/MiddleTarget')
+    origin_pos = sim.getObjectPosition(origin_dummy, -1)
+    target_pos = sim.getObjectPosition(target_dummy, -1)
+
     push_object = gen.push_object_waypoints(
-        object_x = 0.140,
-        object_y = 0.00,
-        object_z = 0.14,
-        
-        target_x = 0.280,
-        target_y = 0.0,
-        target_z = 0.145,
+        object_x = origin_pos[0],
+        object_y = origin_pos[1],
+        object_z = origin_pos[2],
+
+        target_x = target_pos[0],
+        target_y = target_pos[1],
+        target_z = target_pos[2],
         gripper_open = True,
         homeback = True
     )
@@ -103,7 +114,7 @@ if __name__ == "__main__":
     #full_routine = gen.unite_waypoints([push_object, pick_and_place])
 
     #gen.save_waypoints_to_json(pick_and_place, "pick_and_place_02.json")
-    gen.save_waypoints_to_json(push_object, "push_01.json")
+    gen.save_waypoints_to_json(push_object, "push_middleBridge.json")
 
 
 
