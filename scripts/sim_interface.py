@@ -37,14 +37,16 @@ class CoppeliaSimController:
         self.vision_sensor    = self.sim.getObject('/visionSensor')
         self.conveyor_handle  = self.sim.getObject('/conveyorSystem')     # TUNE: exact name/path of your conveyor model
         self.conveyor_center  = self.sim.getObject('/conveyorSystem/ConveyorCenter')     # dummy at the ring's rotation axis
-        self.origin_dummy     = self.sim.getObject('/MiddleOrigin')        # dummy at the fixed angle the arm pushes from
-        self.strike_dummy     = self.sim.getObject('/MiddleStrike')        # dummy at the strike point on the belt's centerline
-        self.target_dummy     = self.sim.getObject('/MiddleTarget')        # IK target dummy for the arm tip
+        self.origin_dummies     = [self.sim.getObject('/LeftOrigin'), self.sim.getObject('/MiddleOrigin') , self.sim.getObject('/RightOrigin')]     # dummy at the fixed angle the arm pushes from
+        self.strike_dummies     = [self.sim.getObject('/LeftStrike'), self.sim.getObject('/MiddleStrike'), self.sim.getObject('/RightStrike')]        # dummy at the strike point on the belt's centerline
+        self.target_dummies     = [self.sim.getObject('/LeftTarget'), self.sim.getObject('/MiddleTarget'), self.sim.getObject('/RightTarget')]        # IK target dummy for the arm tip
         self.calib_markers    = [self.sim.getObject('/CalibMarker1'), self.sim.getObject('/CalibMarker2'), self.sim.getObject('/CalibMarker3'), self.sim.getObject('/CalibMarker4')]  # TUNE: order of markers in IMG_PTS
         #geometry
         self.center_pos = self.sim.getObjectPosition(self.conveyor_center, -1)
-        self.strike_pos = self.sim.getObjectPosition(self.strike_dummy, -1)
-        self.theta_eff = math.atan2(self.strike_pos[1] - self.center_pos[1], self.strike_pos[0] - self.center_pos[0])
+        self.origin_pos = [self.sim.getObjectPosition(self.origin_dummies[0], -1), self.sim.getObjectPosition(self.origin_dummies[1], -1), self.sim.getObjectPosition(self.origin_dummies[2], -1)]
+        self.strike_pos = [self.sim.getObjectPosition(self.strike_dummies[0], -1), self.sim.getObjectPosition(self.strike_dummies[1], -1), self.sim.getObjectPosition(self.strike_dummies[2], -1)]
+        self.target_pos = [self.sim.getObjectPosition(self.target_dummies[0], -1), self.sim.getObjectPosition(self.target_dummies[1], -1), self.sim.getObjectPosition(self.target_dummies[2], -1)]
+        self.theta_eff = [math.atan2(self.strike_pos[i][1] - self.center_pos[1], self.strike_pos[i][0] - self.center_pos[0]) for i in range(3)]
         return self
 
     def get_current_joint_angles(self) -> dict:

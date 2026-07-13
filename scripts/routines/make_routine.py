@@ -93,9 +93,9 @@ if __name__ == "__main__":
 
     client = RemoteAPIClient()
     sim = client.require('sim')
-
-    origin_dummy     = sim.getObject('/MiddleOrigin')        
-    target_dummy     = sim.getObject('/MiddleTarget')
+    bridge = 'Left'
+    origin_dummy     = sim.getObject(f'/{bridge}Origin')        
+    target_dummy     = sim.getObject(f'/{bridge}Strike')
     origin_pos = sim.getObjectPosition(origin_dummy, -1)
     target_pos = sim.getObjectPosition(target_dummy, -1)
 
@@ -108,13 +108,13 @@ if __name__ == "__main__":
         target_y = target_pos[1],
         target_z = target_pos[2],
         gripper_open = True,
-        homeback = True
+        homeback = False
     )
 
     #full_routine = gen.unite_waypoints([push_object, pick_and_place])
 
     #gen.save_waypoints_to_json(pick_and_place, "pick_and_place_02.json")
-    gen.save_waypoints_to_json(push_object, "push_middleBridge.json")
+    gen.save_waypoints_to_json(push_object, f"push_{bridge}.json")
 
 
 

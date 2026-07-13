@@ -45,6 +45,20 @@ class RoutineLoader:
                 adaptive_grasp=wp.get("adaptive_grasp", False),
             ))
         return waypoints
+    
+    @staticmethod
+    def from_dict(data: dict) -> List[Waypoint]:
+        """Same shape as load(), but takes an in-memory dict instead of a file path."""
+        waypoints = []
+        for wp in data["waypoints"]:
+            waypoints.append(Waypoint(
+                label=wp.get("label", ""),
+                x=wp["x"], y=wp["y"], z=wp["z"],
+                gripper_open=wp["gripper_open"],
+                wait_after_s=wp.get("wait_after_s", 0.0),
+                adaptive_grasp=wp.get("adaptive_grasp", False),
+            ))
+        return waypoints
 
 
 class RoutineExecutor:

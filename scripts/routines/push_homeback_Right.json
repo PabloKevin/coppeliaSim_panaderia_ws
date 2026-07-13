@@ -1,0 +1,36 @@
+{
+  "waypoints": [
+    {
+      "label": "at_object",
+      "x": 0.135,
+      "y": 0.1,
+      "z": 0.1425,
+      "gripper_open": true,
+      "wait_after_s": 0.0
+    },
+    {
+      "label": "push_object",
+      "x": 0.19,
+      "y": 0.125,
+      "z": 0.1425,
+      "gripper_open": true,
+      "wait_after_s": 0.0
+    },
+    {
+      "label": "at_object",
+      "x": 0.19,
+      "y": 0.125,
+      "z": 0.1425,
+      "gripper_open": true,
+      "wait_after_s": 0.0
+    },
+    {
+      "label": "push_object",
+      "x": 0.135,
+      "y": 0.1,
+      "z": 0.1425,
+      "gripper_open": true,
+      "wait_after_s": 0.0
+    }
+  ]
+}

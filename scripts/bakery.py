@@ -21,6 +21,7 @@ import cv2
 import sys
 from sim_interface import CoppeliaSimController
 from routine import RoutineLoader, RoutineExecutor
+import threading
 
 # ---------------------------------------------------------------------------
 # Connection & handles
@@ -38,9 +39,15 @@ R_PATH = 0.500          # meters, radius of the belt's centerline
 LOOP_LENGTH = 2 * math.pi * R_PATH
 
 BRIDGE_TARGETS = {
-    'cylinder': '/Bridge1',
-    'cuboid':   '/Bridge2',
-    'star':     '/Bridge3',
+    'cylinder': '/LeftBridge',
+    'cuboid':   '/MiddleBridge',
+    'star':     '/RightBridge',
+}
+
+SHAPE_IDX = {
+    'cylinder': 0,
+    'cuboid':   1,
+    'star':     2,
 }
 
 routine_path = {
@@ -158,21 +165,21 @@ def find_contour_near(mask, u, v, max_dist):
  
 def detect_new_objects():
     global next_id, prev_mask, track_pt, track_id, track_start_time, track_classified
- 
+
     img, res = sim.sim.getVisionSensorImg(sim.vision_sensor)   # NOTE: (image, resolution) order
     img = np.frombuffer(img, dtype=np.uint8).reshape(res[1], res[0], 3)
     img = cv2.flip(img, 0)
     img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     mask = get_cookie_mask(img_bgr)
     band_px = res[0] * ENTRY_BAND_FRAC
- 
+
     if SHOW_DEBUG_WINDOWS:
         disp = cv2.resize(img_bgr, (384, 384), interpolation=cv2.INTER_NEAREST)
         disp_mask = cv2.resize(mask, (384, 384), interpolation=cv2.INTER_NEAREST)
         cv2.imshow('VisionSensor', disp)
         cv2.imshow('CookieMask', disp_mask)
         cv2.waitKey(1)   # REQUIRED for windows to actually refresh on Linux
- 
+
     if track_pt is None:
         candidate = find_entry_candidate(mask, band_px)
         if candidate is not None:
@@ -184,22 +191,22 @@ def detect_new_objects():
             track_classified = False
         prev_mask = mask
         return
- 
+
     # Track with optical flow on the grayscale mask itself (high-contrast,
     # good features for LK since it's pure black/white).
     new_pts, status, _ = cv2.calcOpticalFlowPyrLK(prev_mask, mask, track_pt, None, **LK_PARAMS)
     prev_mask = mask
- 
+
     if new_pts is None or status is None or status[0][0] == 0:
         track_pt = None
         return
- 
+
     u, v = new_pts[0, 0]
     if u < 0 or u >= res[0] or v < 0 or v >= res[1]:
         track_pt = None
         return
     track_pt = new_pts
- 
+
     if not track_classified and sim.time() - track_start_time >= CLASSIFY_DELAY:
         cnt = find_contour_near(mask, u, v, 25)
         if cnt is not None:
@@ -216,7 +223,7 @@ def register_new_object(oid, shape, r, theta_obj):
     v = sim.get_conveyor_vel()
     if abs(v) < 1e-6:
         return
-    dtheta = (sim.theta_eff - theta_obj) % (2 * math.pi)
+    dtheta = (sim.theta_eff[SHAPE_IDX[shape]] - theta_obj) % (2 * math.pi)
     ds = dtheta * R_PATH
     t_arrival = sim.time() + ds / abs(v)
     scheduled.append({'id': oid, 'shape': shape, 'r': r, 't': t_arrival})
@@ -227,24 +234,41 @@ def register_new_object(oid, shape, r, theta_obj):
 # ---------------------------------------------------------------------------
 # Measure these empirically: time for the push trajectory from "ready" pose
 # to the strike point and back. Can also depend on r (longer reach = longer time).
-ARM_TRAVEL_TIME = {'cylinder': 0.6, 'cuboid': 0.6, 'star': 0.7}  # TUNE
+ARM_TRAVEL_TIME = {'cylinder': 0.6, 'cuboid': 0.6, 'star': 0.6}  # TUNE
 
 executor = RoutineExecutor(interface=sim)
 
 def arm_control_step():
     now = sim.time()
     for job in list(scheduled):
-        
+        ready_pose(job['shape'])
         lead = ARM_TRAVEL_TIME.get(job['shape'], 0.6)
-        if now >= job['t'] - lead:
-            push_object(job['shape'])
-            scheduled.remove(job)
+        while now < job['t'] - lead:
+            time.sleep(0.005)
+            now = sim.time()
+            continue
+        push_object(job['shape'])
+        scheduled.remove(job)
 
+def ready_pose(shape):
+    waypoints = {
+            "waypoints": [
+                {"label": "ready_pose", "x": sim.origin_pos[SHAPE_IDX[shape]][0], "y": sim.origin_pos[SHAPE_IDX[shape]][1], "z": sim.origin_pos[SHAPE_IDX[shape]][2], "gripper_open": True, "wait_after_s": 0.0}
+            ]
+        }
+    waypoints = RoutineLoader.from_dict(waypoints)
+    executor.run(waypoints)
 
 def push_object(shape):
-    if shape is 'cuboid':
-        waypoints = RoutineLoader.load(routine_path[shape])
-        executor.run(waypoints)
+    #waypoints = RoutineLoader.load(routine_path[shape])
+    waypoints = {
+            "waypoints": [
+                {"label": "push_object", "x": sim.target_pos[SHAPE_IDX[shape]][0], "y": sim.target_pos[SHAPE_IDX[shape]][1], "z": sim.target_pos[SHAPE_IDX[shape]][2], "gripper_open": True, "wait_after_s": 0.0},
+                {"label": "home", "x": sim.origin_pos[SHAPE_IDX[shape]][0], "y": sim.origin_pos[SHAPE_IDX[shape]][1], "z": sim.origin_pos[SHAPE_IDX[shape]][2], "gripper_open": True, "wait_after_s": 0.0}
+            ]
+        }
+    waypoints = RoutineLoader.from_dict(waypoints)
+    executor.run(waypoints)
 
 
 
@@ -265,10 +289,11 @@ def push_object(shape):
 # ---------------------------------------------------------------------------
 sim.sim.startSimulation()
 time.sleep(0.5)
+
 try:
     while True:
         detect_new_objects()
         arm_control_step()
-        time.sleep(0.02)
+        time.sleep(0.01)
 except KeyboardInterrupt:
     sim.stopSimulation()
