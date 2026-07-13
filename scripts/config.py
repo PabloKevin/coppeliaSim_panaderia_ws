@@ -133,7 +133,7 @@ MAX_LINEAR_ACCEL = 20  # m/s^2, for cartesian moves (x,y,z)
 MIN_MOVE_DURATION = 0.02
 
 # Trajectory sampling / streaming rate to CoppeliaSim (and later, serial)
-UPDATE_RATE_HZ = 40.0
+UPDATE_RATE_HZ = 30.0
 
 # Joint order used everywhere a plain list/tuple of 4 angles is passed around
 JOINT_NAMES = ("base", "shoulder", "elbow", "gripper")
@@ -191,8 +191,8 @@ GRIPPER_CLOSE_TIMEOUT_S = 8.0
 # or just its name if it's at the top level, e.g. "Gear".
 GALLETAS_NAMES = ["/Galleta_Cuadrada", "/Galleta_Redonda", "/Galleta_Estrella"]
 
-# How many objects to spawn in total (set to None for infinite)
-MAX_OBJECTS = 9
+# How many objects to be simultanoisly 
+MAX_OBJECTS = 6
 
 # Minimum allowed distance (meters) to any existing "Galleta" object
 # before a new one is allowed to spawn at a given position

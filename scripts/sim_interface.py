@@ -128,7 +128,7 @@ class ObjectGenerator():
         self.galletas_spawn_pos = self.sim.getObjectPosition(self.galletas_spawn, -1)
 
 
-    def get_objects_by_prefix(self, prefix):
+    def get_objects_by_prefix(self, prefix, exceptions=[]):
         """
         Return a list of (handle, alias, position) for every object in the
         scene whose name/alias starts with `prefix`.
@@ -138,7 +138,7 @@ class ObjectGenerator():
         matches = []
         for h in all_handles:
             alias = self.sim.getObjectAlias(h)
-            if alias.startswith(prefix):
+            if alias.startswith(prefix) and alias not in exceptions:
                 pos = self.sim.getObjectPosition(h, -1)  # world frame
                 matches.append((h, alias, pos))
         self.n_objects = len(matches)
@@ -176,6 +176,24 @@ class ObjectGenerator():
             handles.append(h)
         return handles
     
+    def make_dynamic(self, handle):
+        """
+        Ensure a shape is dynamic (movable under physics) and respondable
+        (participates in collisions). Call this right after copying/
+        spawning an object if you want it to behave like a physical
+        object rather than a static/frozen one.
+        """
+        # static = 0 means "dynamic" (the shape can move/fall/collide)
+        self.sim.setObjectInt32Param(handle, self.sim.shapeintparam_static, 0)
+
+        # respondable = 1 means it participates in collision response
+        self.sim.setObjectInt32Param(handle, self.sim.shapeintparam_respondable, 1)
+
+        # Re-registers the object with the physics engine so the new
+        # dynamic/respondable flags actually take effect immediately,
+        # instead of only on the next simulation restart.
+        self.sim.resetDynamicObject(handle)
+    
     
     def spawn_object(self, template_handle, position, index):
         """
@@ -194,6 +212,8 @@ class ObjectGenerator():
     
         # Place it in the world frame (-1 = absolute/world)
         self.sim.setObjectPosition(new_handle, -1, position)
+
+        self.make_dynamic(new_handle)
     
         # If the copy is dynamic, reset its velocity/forces so it doesn't
         # inherit any leftover motion from the template
@@ -216,18 +236,60 @@ class ObjectGenerator():
         count = 0
         try:
             while True:
-                if count < config.MAX_OBJECTS:
-                    template = random.choice(template_handles)
-        
-                    if self.is_position_free(self.galletas_spawn_pos, prefix="Galleta",
-                                        min_distance=config.MIN_SPAWN_DISTANCE):
-                        self.spawn_object(template, self.galletas_spawn_pos, count)
-                        count += 1
-                    else:
-                        print("  -> Skipping spawn, position occupied.")
+                
+                template = random.choice(template_handles)
     
-                time.sleep(random.uniform(1.0,5.0))
+                if self.is_position_free(self.galletas_spawn_pos, prefix="Galleta",
+                                    min_distance=config.MIN_SPAWN_DISTANCE) and self.n_objects < config.MAX_OBJECTS:
+                    self.spawn_object(template, self.galletas_spawn_pos, count)
+                    count += 1
+                else:
+                    print("  -> Skipping spawn, position occupied.")
+    
+                time.sleep(random.uniform(2.5,7.0))
     
         except KeyboardInterrupt:
             print("\nStopped by user.")
+            self.sim.stopSimulation()
     
+    def remove_if_below(self, handle, alias, z_threshold, below=True):
+        """
+        Deletes the object if its world z-position has crossed z_threshold.
+        below=True  -> delete when object falls BELOW z_threshold (e.g. off the belt/table)
+        below=False -> delete when object rises ABOVE z_threshold
+        Returns True if the object was deleted.
+        """
+        try:
+            pos = self.sim.getObjectPosition(handle, -1)
+        except Exception:
+            # handle already invalid/deleted
+            return True
+
+        z = pos[2]
+        crossed = (z < z_threshold) if below else (z > z_threshold)
+
+        if crossed:
+            self.sim.removeObjects([handle])
+            print(f"[{time.strftime('%H:%M:%S')}] Removed {alias} "
+                f"(z={z:.3f}, threshold={z_threshold})")
+            return True
+
+        return False
+    
+
+    def tarea_cleanup_galletas(self, z_threshold=0.075, poll_interval=1.0):
+        """
+        Continuously scans for objects starting with 'Galleta' and removes
+        any that have fallen below z_threshold (e.g. dropped off the
+        conveyor/table edge).
+        """
+        self.connect()  # own ZMQ connection, since this likely runs in its own thread
+        try:
+            while True:
+                objects = self.get_objects_by_prefix("Galleta", exceptions=["Galleta_Cuadrada", "Galleta_Redonda", "Galleta_Estrella"])
+                for handle, alias, pos in objects:
+                    self.remove_if_below(handle, alias, z_threshold)
+                time.sleep(poll_interval)
+        except KeyboardInterrupt:
+            print("\nCleanup stopped by user.")
+            self.sim.stopSimulation()

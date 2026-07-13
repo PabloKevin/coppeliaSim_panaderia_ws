@@ -234,7 +234,7 @@ def register_new_object(oid, shape, r, theta_obj):
 # ---------------------------------------------------------------------------
 # Measure these empirically: time for the push trajectory from "ready" pose
 # to the strike point and back. Can also depend on r (longer reach = longer time).
-ARM_TRAVEL_TIME = {'cylinder': 0.6, 'cuboid': 0.6, 'star': 0.6}  # TUNE
+ARM_TRAVEL_TIME = {'cylinder': 0.7, 'cuboid': 0.7, 'star': 0.7}  # TUNE
 
 executor = RoutineExecutor(interface=sim)
 
@@ -253,7 +253,7 @@ def arm_control_step():
 def ready_pose(shape):
     waypoints = {
             "waypoints": [
-                {"label": "ready_pose", "x": sim.origin_pos[SHAPE_IDX[shape]][0], "y": sim.origin_pos[SHAPE_IDX[shape]][1], "z": sim.origin_pos[SHAPE_IDX[shape]][2], "gripper_open": True, "wait_after_s": 0.0}
+                {"label": "ready_pose", "x": sim.origin_pos[SHAPE_IDX[shape]][0], "y": sim.origin_pos[SHAPE_IDX[shape]][1], "z": sim.origin_pos[SHAPE_IDX[shape]][2], "gripper_open": False, "wait_after_s": 0.0}
             ]
         }
     waypoints = RoutineLoader.from_dict(waypoints)
@@ -263,8 +263,8 @@ def push_object(shape):
     #waypoints = RoutineLoader.load(routine_path[shape])
     waypoints = {
             "waypoints": [
-                {"label": "push_object", "x": sim.target_pos[SHAPE_IDX[shape]][0], "y": sim.target_pos[SHAPE_IDX[shape]][1], "z": sim.target_pos[SHAPE_IDX[shape]][2], "gripper_open": True, "wait_after_s": 0.0},
-                {"label": "home", "x": sim.origin_pos[SHAPE_IDX[shape]][0], "y": sim.origin_pos[SHAPE_IDX[shape]][1], "z": sim.origin_pos[SHAPE_IDX[shape]][2], "gripper_open": True, "wait_after_s": 0.0}
+                {"label": "push_object", "x": sim.target_pos[SHAPE_IDX[shape]][0], "y": sim.target_pos[SHAPE_IDX[shape]][1], "z": sim.target_pos[SHAPE_IDX[shape]][2], "gripper_open": False, "wait_after_s": 0.0},
+                {"label": "home", "x": sim.origin_pos[SHAPE_IDX[shape]][0], "y": sim.origin_pos[SHAPE_IDX[shape]][1], "z": sim.origin_pos[SHAPE_IDX[shape]][2], "gripper_open": False, "wait_after_s": 0.0}
             ]
         }
     waypoints = RoutineLoader.from_dict(waypoints)
@@ -272,31 +272,33 @@ def push_object(shape):
 
 
 
-# ---------------------------------------------------------------------------
-# Throughput optimization (optional)
-# ---------------------------------------------------------------------------
-# Ceiling: two cookies closer together (in arc length) than the arm's full
-# cycle time will cause a miss. If you know/measure the minimum spacing
-# s_min between consecutive cookies on the belt, cap speed accordingly:
-#
-#   T_CYCLE = 1.2          # TUNE: measured full pick+push+retract time (s)
-#   S_MIN   = 0.15         # TUNE: closest expected spacing between cookies (m)
-#   v_max = S_MIN / T_CYCLE
-#   set_conveyor_vel(min(v_max * 0.9, YOUR_DESIRED_SPEED))  # 10% safety margin
+def main_task():
+    try:
+        while True:
+            detect_new_objects()
+            arm_control_step()
+            time.sleep(0.03)
+    finally:
+        print("Stopping simulation process.")
+        sim.sim.stopSimulation()
+
 
 # ---------------------------------------------------------------------------
 # Main loop
 # ---------------------------------------------------------------------------
-sim.sim.startSimulation()
-time.sleep(0.5)
+if __name__ == "__main__":
+    sim.sim.startSimulation()
+    time.sleep(0.5)
 
-cookiesGen = ObjectGenerator()
-hilo_cookiesGen = threading.Thread(target=cookiesGen.tarea_spawn_galletas)
-hilo_cookiesGen.start()
-try:
-    while True:
-        detect_new_objects()
-        arm_control_step()
-        time.sleep(0.01)
-except KeyboardInterrupt:
-    sim.stopSimulation()
+
+    cookiesGen = ObjectGenerator()
+    hilo_cookiesGen = threading.Thread(target=cookiesGen.tarea_spawn_galletas)
+    hilo_cookiesGen.start()
+
+    cleanupGen = ObjectGenerator()
+    hilo_cleanup = threading.Thread(target=cleanupGen.tarea_cleanup_galletas, kwargs={"z_threshold": 0.075})
+    hilo_cleanup.start()
+
+    hilo_main = threading.Thread(target=main_task)
+    hilo_main.start()
+    
