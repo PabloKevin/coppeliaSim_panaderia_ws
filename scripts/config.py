@@ -197,3 +197,6 @@ MAX_OBJECTS = 6
 # Minimum allowed distance (meters) to any existing "Galleta" object
 # before a new one is allowed to spawn at a given position
 MIN_SPAWN_DISTANCE = 0.27
+
+TASA_DE_ARRIBO = 1500 # Galletas/hora
+time2wait = 3600/TASA_DE_ARRIBO  # con None el tiempo de espera es aleatorio

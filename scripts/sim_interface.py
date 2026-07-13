@@ -259,7 +259,7 @@ class ObjectGenerator():
 
     def tarea_spawn_galletas(self):
         self.connect()
-
+        time2wait = random.uniform(2.5,7.0) if config.time2wait is None else config.time2wait
         template_handles = self.get_template_handles()
         print(f"Found {len(template_handles)} template objects.")
     
@@ -276,7 +276,7 @@ class ObjectGenerator():
                 else:
                     print("  -> Skipping spawn, position occupied.")
     
-                time.sleep(random.uniform(2.5,7.0))
+                time.sleep(time2wait)
     
         except KeyboardInterrupt:
             print("\nStopped by user.")
