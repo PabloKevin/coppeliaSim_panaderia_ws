@@ -19,7 +19,7 @@ import math
 import numpy as np
 import cv2
 import sys
-from sim_interface import CoppeliaSimController, ObjectGenerator
+from sim_interface import CoppeliaSimController, ObjectGenerator, ConveynorController
 from routine import RoutineLoader, RoutineExecutor
 import threading
 
@@ -125,7 +125,7 @@ def classify_shape(cnt):
     solidity = area / hull_area if hull_area > 0 else 1.0
     #print(f"[classify] area={area:.1f} peri={peri:.1f} circ={circularity:.3f} approx={len(approx)} sol={solidity:.3f}")
  
-    if circularity > 0.65:                       # TUNE
+    if circularity > 0.65 and len(approx)!=4:                       # TUNE
         return 'cylinder'
     if len(approx) == 4 and solidity > 0.9:      # TUNE
         return 'cuboid'
@@ -220,6 +220,8 @@ def detect_new_objects():
  
  
 def register_new_object(oid, shape, r, theta_obj):
+    pushing_event.set()
+    time.sleep(0.01)
     v = sim.get_conveyor_vel()
     if abs(v) < 1e-6:
         return
@@ -234,11 +236,13 @@ def register_new_object(oid, shape, r, theta_obj):
 # ---------------------------------------------------------------------------
 # Measure these empirically: time for the push trajectory from "ready" pose
 # to the strike point and back. Can also depend on r (longer reach = longer time).
-ARM_TRAVEL_TIME = {'cylinder': 0.7, 'cuboid': 0.7, 'star': 0.7}  # TUNE
+ARM_TRAVEL_TIME = {'cylinder': 0.4, 'cuboid': 0.2, 'star': 0.01}  # TUNE
 
 executor = RoutineExecutor(interface=sim)
+pushing_event = threading.Event()
 
 def arm_control_step():
+    global pushing_flag
     now = sim.time()
     for job in list(scheduled):
         ready_pose(job['shape'])
@@ -249,6 +253,7 @@ def arm_control_step():
             continue
         push_object(job['shape'])
         scheduled.remove(job)
+        pushing_event.clear()
 
 def ready_pose(shape):
     waypoints = {
@@ -287,18 +292,31 @@ def main_task():
 # Main loop
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
+    pushing_flag = False
+
     sim.sim.startSimulation()
     time.sleep(0.5)
 
-
+    # Instanciación de los hilos
     cookiesGen = ObjectGenerator()
     hilo_cookiesGen = threading.Thread(target=cookiesGen.tarea_spawn_galletas)
-    hilo_cookiesGen.start()
 
     cleanupGen = ObjectGenerator()
     hilo_cleanup = threading.Thread(target=cleanupGen.tarea_cleanup_galletas, kwargs={"z_threshold": 0.075})
-    hilo_cleanup.start()
-
-    hilo_main = threading.Thread(target=main_task)
-    hilo_main.start()
     
+    hilo_main = threading.Thread(target=main_task)
+    
+    conveynorCtr = ConveynorController(pushing_event, v_slow=0.13, v_fast=0.2)
+    hilo_conveynorVel = threading.Thread(target=conveynorCtr.optimizacion_vel)
+    
+
+    # Correr las tareas en hilos
+    hilo_cookiesGen.start()
+    hilo_cleanup.start()
+    hilo_conveynorVel.start()
+    hilo_main.start()
+
+    hilo_cookiesGen.join()
+    hilo_cleanup.join()
+    hilo_conveynorVel.join()
+    hilo_main.join()

@@ -102,14 +102,44 @@ class CoppeliaSimController:
         state = self.sim.readCustomTableData(self.conveyor_handle, '__state__')
         return state['vel']
 
+    def time(self):
+        """Current sim time (seconds) -- useful for scheduling future events."""
+        return self.sim.getSimulationTime()
+
+
+class ConveynorController():
+    def __init__(self, pushing_event = None, v_slow=0.1, v_fast=0.2):
+        self.pushing_event = pushing_event
+        self.vel = 0.1
+        self.v_slow = v_slow
+        self.v_fast = v_fast
+    
+    def connect(self):
+        from coppeliasim_zmqremoteapi_client import RemoteAPIClient
+
+        self.client = RemoteAPIClient()
+        self.sim = self.client.require("sim")
+        self.conveyor_handle  = self.sim.getObject('/conveyorSystem')  
+
 
     def set_conveyor_vel(self, v):
         """Command the belt's linear speed (m/s) via velocity control."""
         self.sim.setBufferProperty(self.conveyor_handle, 'customData.__ctrl__', self.sim.packTable({'vel': v}))
 
-    def time(self):
-        """Current sim time (seconds) -- useful for scheduling future events."""
-        return self.sim.getSimulationTime()
+    def optimizacion_vel(self):
+        self.connect()
+        try:  
+            while True:
+                if self.pushing_event and self.pushing_event.is_set():
+                    self.set_conveyor_vel(self.v_slow)
+                else:
+                    self.set_conveyor_vel(self.v_fast)
+                time.sleep(0.03)
+        except KeyboardInterrupt:
+            print("\nCleanup stopped by user.")
+            self.sim.stopSimulation()
+
+
 
 
 class ObjectGenerator():
