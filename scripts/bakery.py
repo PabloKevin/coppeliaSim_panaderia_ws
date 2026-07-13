@@ -19,7 +19,7 @@ import math
 import numpy as np
 import cv2
 import sys
-from sim_interface import CoppeliaSimController
+from sim_interface import CoppeliaSimController, ObjectGenerator
 from routine import RoutineLoader, RoutineExecutor
 import threading
 
@@ -290,6 +290,9 @@ def push_object(shape):
 sim.sim.startSimulation()
 time.sleep(0.5)
 
+cookiesGen = ObjectGenerator()
+hilo_cookiesGen = threading.Thread(target=cookiesGen.tarea_spawn_galletas)
+hilo_cookiesGen.start()
 try:
     while True:
         detect_new_objects()

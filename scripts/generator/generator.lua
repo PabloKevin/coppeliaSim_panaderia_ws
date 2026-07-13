@@ -27,15 +27,12 @@ function sysCall_init()
     -- Get generator handle
     selfHandle = sim.getObjectAssociatedWithScript(sim.handle_self)
     
-    -- Get conveyor path handle
-    pathHandle = sim.getObjectHandle("ConveyorPath")
     
     -- Initialize random seed
     math.randomseed(os.time())
     
     print("Object Generator Initialized")
     print("Spawn interval: " .. config.spawnInterval .. "s")
-    print("Conveyor speed: " .. config.conveyorSpeed .. "m/s")
 end
 
 function sysCall_actuation()
@@ -46,9 +43,6 @@ function sysCall_actuation()
         spawnObject()
         lastSpawnTime = currentTime
     end
-    
-    -- Update conveyor movement
-    updateConveyor()
     
     -- Clean up objects that have fallen off
     cleanupObjects()
@@ -82,12 +76,6 @@ function spawnObject()
         spawnPos[3] = spawnPos[3] + config.spawnHeight
         sim.setObjectPosition(shapeHandle, -1, spawnPos)
         
-        -- Set initial velocity (match conveyor)
-        local conveyorVelocity = getConveyorVelocity()
-        sim.setObjectFloatParameter(shapeHandle, sim.shapefloatparam_init_velocity_x, conveyorVelocity[1])
-        sim.setObjectFloatParameter(shapeHandle, sim.shapefloatparam_init_velocity_y, conveyorVelocity[2])
-        sim.setObjectFloatParameter(shapeHandle, sim.shapefloatparam_init_velocity_z, conveyorVelocity[3])
-        
         -- Store reference
     table.insert(spawnedObjects, {
             handle = shapeHandle,
@@ -101,19 +89,6 @@ function spawnObject()
     end
 end
 
-function updateConveyor()
-    -- Move conveyor path
-    local dt = sim.getSimulationTimeStep()
-    local currentPos = sim.getPathPosition(pathHandle)
-    local newPos = currentPos + config.conveyorSpeed * dt
-    sim.setPathPosition(pathHandle, newPos)
-end
-
-function getConveyorVelocity()
-    -- Return velocity vector based on conveyor orientation
-    -- For circular path, this would be tangent to the path
-    return {config.conveyorSpeed, 0, 0}  -- Simplified for linear section
-end
 
 function cleanupObjects()
     local currentTime = sim.getSimulationTime()
