@@ -22,6 +22,7 @@ import sys
 from sim_interface import CoppeliaSimController, ObjectGenerator, ConveynorController
 from routine import RoutineLoader, RoutineExecutor
 import threading
+import config
 
 # ---------------------------------------------------------------------------
 # Connection & handles
@@ -222,7 +223,7 @@ def detect_new_objects():
 
 V_NORMAL = 0.2        # Velocidad de crucero/búsqueda (m/s)
 V_PUSHING = 0.13       # Velocidad lenta de empuje (m/s)
-CONVEYOR_ACCEL = 0.04  # TUNE: Aceleración máxima de tu cinta en m/s^2 
+
 
 def estimate_travel_time(ds, v_init, v_target, accel=None):
     """
@@ -271,7 +272,7 @@ def register_new_object(oid, shape, r, theta_obj):
     ds = dtheta * R_PATH
     
     # 4. Cálculo del tiempo de arribo con el modelo cinemático
-    travel_time = estimate_travel_time(ds, v_init, v_target, CONVEYOR_ACCEL)
+    travel_time = estimate_travel_time(ds, v_init, v_target, config.CONVEYOR_ACCEL)
     t_arrival = sim.time() + travel_time
     
     scheduled.append({'id': oid, 'shape': shape, 'r': r, 't': t_arrival})

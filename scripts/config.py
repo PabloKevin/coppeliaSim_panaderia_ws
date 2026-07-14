@@ -200,3 +200,5 @@ MIN_SPAWN_DISTANCE = 0.27
 
 TASA_DE_ARRIBO = 1500 # Galletas/hora
 time2wait = 3600/TASA_DE_ARRIBO  # con None el tiempo de espera es aleatorio
+
+CONVEYOR_ACCEL = 0.04  # TUNE: Aceleración máxima de tu cinta en m/s^2 

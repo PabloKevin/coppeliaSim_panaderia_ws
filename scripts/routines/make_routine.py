@@ -15,6 +15,7 @@ class WaypointGenerator:
                 {"label": "at_cookie",        "x": float(object_x), "y": float(object_y), "z": float(object_z), "gripper_open": True,  "wait_after_s": 0.2},
                 {"label": "grip_cookie",      "x": float(object_x), "y": float(object_y), "z": float(object_z), "gripper_open": False, "wait_after_s": 0.4, "adaptive_grasp": True},
                 {"label": "lift_cookie",      "x": float(object_x), "y": float(object_y), "z": float(safe_z),   "gripper_open": False, "wait_after_s": 0.1},
+                {"label": "above_place",         "x": float(target_x), "y": float(target_y), "z": float(safe_z), "gripper_open": False, "wait_after_s": 0.2},
                 {"label": "at_place",         "x": float(target_x), "y": float(target_y), "z": float(target_z), "gripper_open": False, "wait_after_s": 0.2},
                 {"label": "release_cookie",   "x": float(target_x), "y": float(target_y), "z": float(target_z), "gripper_open": True,  "wait_after_s": 0.3},
                 {"label": "home",             "x": float(home_x),     "y": float(home_y),   "z": float(home_z),          "gripper_open": True,  "wait_after_s": 0.0}
@@ -71,27 +72,27 @@ if __name__ == "__main__":
     gen = WaypointGenerator()
     # Change your location coordinates right here.
     # The generated file will only contain the resulting float calculations.
-    """pick_and_place = gen.pick_and_place_waypoints(
-        home_x   = 0.15,
+    pick_and_place = gen.pick_and_place_waypoints(
+        home_x   = 0.12,
         home_y   = 0.0,
-        home_z   = 0.15,
+        home_z   = 0.155,
 
-        safe_z   = 0.15,
+        safe_z   = 0.17,
         
-        object_x = 0.25,
+        object_x = 0.20,
         object_y = 0.10,
-        object_z = 0.11,
+        object_z = 0.156,
         
-        target_x = 0.25,
+        target_x = 0.20,
         target_y = -0.10,
-        target_z = 0.11,
+        target_z = 0.156,
 
         loop_reps = 2
     )
-    """
+    
     
 
-    client = RemoteAPIClient()
+    """ client = RemoteAPIClient()
     sim = client.require('sim')
     bridge = 'Left'
     origin_dummy     = sim.getObject(f'/{bridge}Origin')        
@@ -110,11 +111,11 @@ if __name__ == "__main__":
         gripper_open = True,
         homeback = False
     )
-
+    """
     #full_routine = gen.unite_waypoints([push_object, pick_and_place])
 
-    #gen.save_waypoints_to_json(pick_and_place, "pick_and_place_02.json")
-    gen.save_waypoints_to_json(push_object, f"push_{bridge}.json")
+    gen.save_waypoints_to_json(pick_and_place, "pick_and_place_final.json")
+    #gen.save_waypoints_to_json(push_object, f"push_{bridge}.json")
 
 
 

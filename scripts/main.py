@@ -28,7 +28,7 @@ def main():
 
     executor = RoutineExecutor(interface=sim)
 
-    routine_path = sys.argv[1] if len(sys.argv) > 1 else "routines/push_homeback_Right.json"
+    """routine_path = sys.argv[1] if len(sys.argv) > 1 else "routines/push_homeback_Right.json"
     waypoints = RoutineLoader.load(routine_path)
     executor.run(waypoints)
 
@@ -51,7 +51,12 @@ def main():
     pushTime = pushTime / reps
     
 
-    print(f"Routine completed in average {pushTime:.2f} seconds.")
+    print(f"Routine completed in average {pushTime:.2f} seconds.")"""
+
+    sim.sim.startSimulation()
+    routine_path = sys.argv[1] if len(sys.argv) > 1 else "routines/pick_and_place_final.json"
+    waypoints = RoutineLoader.load(routine_path)
+    executor.run(waypoints)
 
 
 if __name__ == "__main__":
