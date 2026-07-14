@@ -1,106 +1,112 @@
-# CoppeliaSim Panadería Workspace
+# Celda Robótica de Panadería Automatizada
 
-Cartesian control pipeline for a uArm-style 4-DOF robot arm (EEZYbotARM Mk2),
-simulated in CoppeliaSim and designed to transfer to a real arm as a digital
-twin. You define pick-and-place routines in cartesian coordinates; the
-pipeline converts them to jerk-limited joint trajectories and streams them
-to the sim (and, later, to real servos over serial).
+Simulación en CoppeliaSim (API remota ZMQ) de una celda robótica que detecta
+galletas de distintas formas sobre una cinta transportadora circular, las
+clasifica por visión artificial y las desvía con un brazo robótico de 4 GDL
+hacia el destino correcto. El brazo fue modelado en CoppeliaSim a partir de
+un diseño mecánico open source (EEZYbotARM MK2, https://www.instructables.com/EEZYbotARM-Mk2-3D-Printed-Robot/) hecho en OnShape.
 
-## Requirements for CoppeliaSim control with Python
-
-```bash
-pip install coppeliasim-zmqremoteapi-client numpy
-```
-
-CoppeliaSim 4.x, scene loaded, simulation **running** (Play button) before
-running any script below.
-
-## The 4 files you need to get started
-
-- **`config.py`** — every tunable constant: arm geometry, joint limits,
-  velocity/acceleration limits, and calibration (world-frame position/yaw,
-  per-joint sign+offset, gripper force threshold). **This is the file you
-  edit most.**
-- **`make_routine.py`** — generates a routine JSON (a sequence of cartesian
-  waypoints) from a few named parameters, instead of hand-writing JSON.
-  Edit the parameters at the bottom (`__main__` block) and run it.
-- **`main.py`** — connects to CoppeliaSim and runs a routine JSON through
-  the full pipeline (IK → jerk-limited trajectory → stream to sim).
-- **`calibrate_frame.py`** — measures the arm's real base position/yaw in
-  the world frame and fits the correct `config.py` values, instead of you
-  guessing them.
-
-## Quick start
+## Requisitos
 
 ```bash
-# 1. Generate a routine (edit the parameters inside make_routine.py first)
-python make_routine.py
-# -> writes e.g. pick_and_place_02.json
-
-# 2. Run it in CoppeliaSim (sim must already be playing)
-python main.py pick_and_place_02.json
+pip install coppeliasim-zmqremoteapi-client opencv-python numpy
 ```
 
-`make_routine.py`'s `WaypointGenerator` currently supports:
-- `pick_and_place_waypoints(...)` — home → approach → grip (force-based,
-  `adaptive_grasp: True`) → lift → place → release → home. Set `loop_reps`
-  > 0 to automatically repeat the pick-and-place back and forth that many
-  times.
-- `push_object_waypoints(...)` — a simpler two-point push motion.
-- `unite_waypoints([...])` — concatenate several generated routines into one
-  JSON before saving.
+- CoppeliaSim 4.x abierto, con la escena del proyecto cargada.
+- El servidor de la API remota ZMQ viene incluido en CoppeliaSim 4.x (no
+  requiere add-ons extra).
+- Este proyecto fue implementado en Linux Ubuntu 24.04.
 
-## If it's not moving to the right place (new sim, new arm, or after any physical change)
+## Estructura del proyecto
 
-**This is almost always a calibration problem, not a bug.** Every number
-that makes cartesian targets land in the right physical spot lives in
-`config.py`, and every one of them is specific to one physical arm + one
-scene setup. If you swap arms, rebuild the scene, or move the robot's mount,
-recalibrate in this order:
+| Archivo | Función |
+|---|---|
+| `config.py` | Constantes: geometría, límites, calibración. |
+| `kinematics.py` | Cinemática inversa/directa del brazo. |
+| `trajectory.py` | Planificación de trayectorias suaves (S-curve). |
+| `grasp.py` | Agarre adaptativo con sensor de fuerza. |
+| `routine.py` | Carga y ejecución de rutinas (waypoints). |
+| `sim_interface.py` | Comunicación con CoppeliaSim. |
+| `bakery.py` | Pipeline completo: visión + clasificación + control del brazo. |
+| `main.py` | Ejecuta una rutina puntual (JSON) sobre el brazo. |
+| `make_routine.py` | Genera archivos JSON de rutinas (waypoints). |
+| `routines/` | Rutinas guardadas en formato JSON. |
 
-1. **Geometry** (`L1, L2, L3, L3_FIXED_ANGLE, H0, D0`) — link lengths and
-   offsets. Wrong here means the whole reachable workspace is shifted or
-   distorted, no matter how well the frame/joints are calibrated.
-2. **Joint calibration** (`CALIBRATION` dict: `sign` + `offset` per joint,
-   plus `JOINT_LIMITS`) — maps our internal angle convention to what the
-   simulated/real joint actually expects. Wrong sign = joint moves the
-   opposite direction; wrong offset = consistent angular error at every pose.
-3. **World frame** (`WORLD_BASE_POSITION`, `WORLD_BASE_YAW`) — where the
-   arm's base actually sits in the scene/world. Run `calibrate_frame.py`
-   last, after 1 and 2 are correct, since it fits this by measuring the
-   residual error after everything else — if you run it first, it'll just
-   be compensating for the wrong things.
-4. **Grip force threshold** (`GRIP_FORCE_THRESHOLD_N` and friends) — if
-   grasping is too weak (object slips) or too aggressive (object launches),
-   this needs re-tuning per object/gripper material. `grasp.py` prints the
-   force reading at every closing step so you can see exactly where contact
-   is actually happening and set the threshold just above the noise floor.
+## 1. Correr la simulación completa (`bakery.py`)
 
-**Symptom → likely cause:**
-- Arm reaches the wrong spot, but consistently offset in the same direction
-  → world frame (`WORLD_BASE_POSITION`/`WORLD_BASE_YAW`) or `D0`/`H0`.
-- Arm reaches a spot scaled wrong (overshoots far targets, undershoots near
-  ones, or vice versa) → link lengths (`L1`/`L2`/`L3`).
-- A joint moves the wrong direction, or the arm folds into itself /
-  hits a limit immediately → `CALIBRATION[joint]["sign"]` or `ELBOW_CONFIG`.
-- Right position but wrong angle/orientation feel → `CALIBRATION[joint]["offset"]`.
-- Grasp crushes or launches the object → `GRIP_FORCE_THRESHOLD_N` too high,
-  or `GRIP_STEP_RAD` too coarse (closes too fast to react to contact).
+Este es el modo de operación principal: detecta, clasifica y empuja las
+galletas de forma autónoma y continua.
 
-Run `calibrate_frame.py` any time after a recalibration pass — it reports a
-residual RMS error in mm. A few mm is normal simulation-and-servo-tolerance
-noise; tens of mm or more means one of the steps above still needs work.
+1. Abrir la escena en CoppeliaSim (no hace falta darle Play; el script
+   arranca la simulación por su cuenta).
+2. Ejecutar:
 
-## Other modules in the repo (not usually edited directly)
+```bash
+python3 bakery.py
+```
 
-- `kinematics.py` — analytical inverse/forward kinematics and the
-  world-frame ↔ local-frame transform.
-- `trajectory.py` — the jerk-limited (quintic S-curve) motion planner.
-- `sim_interface.py` — CoppeliaSim ZMQ Remote API wrapper.
-- `routine.py` — loads a routine JSON and executes it as a waypoint state
-  machine, tying IK + trajectory + sim streaming together.
-- `grasp.py` — force-sensor-based closed-loop grasping (`adaptive_grasp`
-  waypoints).
-- `measure_geometry.py`, `characterize_linkage.py` — one-off diagnostic
-  scripts that measure `L1/L2/L3/H0/D0` and the parallel-linkage behavior
-  directly from the CoppeliaSim scene, instead of a tape measure.
+El script se conecta, inicia la simulación, y lanza en paralelo la
+generación de galletas, la limpieza de objetos caídos, el control de
+velocidad de la cinta y el bucle de detección/empuje del brazo.
+Para detener, `Ctrl+C` o cerrar el proceso.
+
+> En caso de hacer cambios sobre la escena `panaderia_ebmk_final.ttt`:
+> Antes de la primera corrida, revisar los valores marcados `TUNE` en
+> `bakery.py` (rango de color HSV, puntos de calibración de cámara, umbrales
+> de clasificación de forma) según tu escena. Los otros hiperparámetros a cambiar se encuentran en `config.py`.
+> Para cambiar las posiciones de origen y target de empujes (si se quisiera mover los puentes por ejemplo), dentro de la escena de coppeliaSim, internamente en el modelo del brazo robótico
+> hay unos Dummies dedicados a eso, que el código internamente lee y sigue. 
+
+## 2. Crear una rutina (`make_routine.py`)
+
+Una rutina es una secuencia de waypoints (posición x, y, z + estado del
+gripper) guardada en un JSON. `make_routine.py` genera estos archivos sin
+necesidad de escribir el JSON a mano.
+
+1. Abrir `make_routine.py` y editar el bloque `if __name__ == "__main__":`
+   con las coordenadas deseadas, por ejemplo para un pick-and-place:
+
+```python
+pick_and_place = gen.pick_and_place_waypoints(
+    home_x=0.12, home_y=0.0, home_z=0.155,
+    safe_z=0.17,
+    object_x=0.20, object_y=0.10, object_z=0.156,
+    target_x=0.20, target_y=-0.10, target_z=0.156,
+    loop_reps=2,          # 0 = una sola pasada; >0 = repite ida y vuelta
+)
+gen.save_waypoints_to_json(pick_and_place, "pick_and_place_final.json")
+```
+
+   También existe `push_object_waypoints(...)` para rutinas simples de
+   empuje (usadas por `bakery.py`), con la opción `homeback=True` para
+   volver al punto de origen tras empujar.
+
+2. Ejecutar el generador:
+
+```bash
+python3 make_routine.py
+```
+
+Esto crea el archivo JSON (por ejemplo `pick_and_place_final.json`) con las
+coordenadas ya calculadas, listo para usar con `main.py`.
+
+## 3. Correr una rutina (`main.py`)
+
+Con CoppeliaSim abierto (la escena cargada, no hace falta iniciar la
+simulación manualmente):
+
+```bash
+python3 main.py routines/pick_and_place_final.json
+```
+
+Si no se indica un archivo, `main.py` usa por defecto
+`routines/pick_and_place_final.json`. El script se conecta al simulador,
+inicia la simulación y ejecuta la rutina completa a través del pipeline de
+cinemática + trayectoria jerk-limited.
+
+## Flujo típico de trabajo
+
+1. Editar `make_routine.py` con las coordenadas deseadas → generar el JSON.
+2. Probar la rutina de forma aislada con `main.py archivo.json`.
+3. Si la rutina es de empuje (push) y se ajusta bien, integrarla o
+   verificarla dentro del pipeline automático de `bakery.py`.
